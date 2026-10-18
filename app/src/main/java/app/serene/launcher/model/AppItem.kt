@@ -1,7 +1,5 @@
 package app.serene.launcher.model
 
-import androidx.compose.ui.graphics.ImageBitmap
-
 enum class FallbackIconGlyph {
     GENERIC,
     PHONE,
@@ -27,7 +25,6 @@ data class AppItem(
     val label: String,
     val packageName: String,
     val activityName: String? = null,
-    val iconBitmap: ImageBitmap? = null,
     val fallbackGlyph: FallbackIconGlyph = FallbackIconGlyph.GENERIC,
     val isPinned: Boolean = false,
     /** Serial number of the Android user profile the app belongs to (personal, work, ...). */
