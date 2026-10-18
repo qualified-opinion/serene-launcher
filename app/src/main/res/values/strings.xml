@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Serene Launcher</string>
+    <string name="pinned_section_label">PINNED</string>
+    <string name="empty_pinned_title">No pinned apps yet</string>
+    <string name="empty_pinned_subtitle">Long-press any app in the drawer to pin it to your home screen for effortless daily access.</string>
+    <string name="open_app_drawer">Open app drawer</string>
+    <string name="all_apps_hint">Swipe up or tap for all apps</string>
+    <string name="search_apps_placeholder">Search apps…</string>
+    <string name="no_apps_found_title">No apps found</string>
+    <string name="no_apps_found_subtitle">No installed applications match \"%1$s\".</string>
+    <string name="clear_search">Clear search</string>
+    <string name="pin_to_home">Pin to Home</string>
+    <string name="unpin_from_home">Unpin from Home</string>
+    <string name="app_info">App info</string>
+    <string name="pinned_badge">Pinned</string>
+    <string name="toggle_theme_cd">Switch between warm light and dark theme</string>
+    <string name="toggle_icons_cd">Toggle small monochrome app icons</string>
+    <string name="toggle_auto_launch_cd">Toggle auto-launch when search matches one app</string>
+    <string name="auto_launch_label">Auto-open</string>
+    <string name="close_drawer_cd">Back to Home</string>
+    <string name="clear_search_cd">Clear search query</string>
+    <string name="long_press_hint">Tip: Long-press any app to pin or unpin</string>
+</resources>

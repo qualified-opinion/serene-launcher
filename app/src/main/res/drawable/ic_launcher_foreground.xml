@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Minimalist Serene Launcher emblem within the 66dp safe zone (21..87) -->
+    <!-- Terracotta accent pin dot -->
+    <path
+        android:fillColor="#C4654B"
+        android:pathData="M36,39m-5.5,0a5.5,5.5 0,1 1,11 0a5.5,5.5 0,1 1,-11 0" />
+    <!-- Top primary typographic bar -->
+    <path
+        android:fillColor="#1C1B18"
+        android:pathData="M48,35h26c2.2,0 4,1.8 4,4s-1.8,4 -4,4H48c-2.2,0 -4,-1.8 -4,-4S45.8,35 48,35z" />
+    <!-- Middle typographic bar -->
+    <path
+        android:fillColor="#1C1B18"
+        android:pathData="M34,51h36c2.2,0 4,1.8 4,4s-1.8,4 -4,4H34c-2.2,0 -4,-1.8 -4,-4S31.8,51 34,51z" />
+    <!-- Bottom short typographic bar -->
+    <path
+        android:fillColor="#6E6A63"
+        android:pathData="M34,67h22c2.2,0 4,1.8 4,4s-1.8,4 -4,4H34c-2.2,0 -4,-1.8 -4,-4S31.8,67 34,67z" />
+</vector>
