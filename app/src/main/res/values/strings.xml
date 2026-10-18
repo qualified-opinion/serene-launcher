@@ -21,4 +21,6 @@
     <string name="clear_search_cd">Clear search query</string>
     <string name="long_press_hint">Tip: Long-press any app to pin or unpin</string>
     <string name="work_profile_label">Work</string>
+    <string name="open_alarms_action">Open alarms</string>
+    <string name="open_calendar_action">Open calendar</string>
 </resources>

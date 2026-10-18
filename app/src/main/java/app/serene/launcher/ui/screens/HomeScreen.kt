@@ -60,6 +60,8 @@ fun HomeScreen(
     onOpenDrawer: () -> Unit,
     onToggleTheme: () -> Unit,
     onToggleIcons: () -> Unit,
+    onClockClick: () -> Unit,
+    onDateClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Home is the bottom of the back stack: swallow Back so the system doesn't
@@ -107,7 +109,9 @@ fun HomeScreen(
                     isDarkTheme = isDarkTheme,
                     showAppIcons = showAppIcons,
                     onToggleTheme = onToggleTheme,
-                    onToggleIcons = onToggleIcons
+                    onToggleIcons = onToggleIcons,
+                    onClockClick = onClockClick,
+                    onDateClick = onDateClick
                 )
 
                 Spacer(modifier = Modifier.height(36.dp))

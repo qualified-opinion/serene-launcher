@@ -60,7 +60,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -90,9 +89,6 @@ import app.serene.launcher.R
 import app.serene.launcher.data.AppIconLoader
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.FallbackIconGlyph
-import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -101,24 +97,11 @@ fun MinimalClockDateHeader(
     showAppIcons: Boolean,
     onToggleTheme: () -> Unit,
     onToggleIcons: () -> Unit,
+    onClockClick: () -> Unit,
+    onDateClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var currentTimeMillis by remember { mutableStateOf(System.currentTimeMillis()) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            currentTimeMillis = System.currentTimeMillis()
-            delay(15_000L)
-        }
-    }
-
-    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-    val dateFormat = remember { SimpleDateFormat("EEE, MMM d", Locale.getDefault()) }
-
-    val formattedTime = remember(currentTimeMillis) { timeFormat.format(Date(currentTimeMillis)) }
-    val formattedDate = remember(currentTimeMillis) {
-        dateFormat.format(Date(currentTimeMillis)).uppercase(Locale.getDefault())
-    }
+    val clock = rememberClockText()
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -129,17 +112,21 @@ fun MinimalClockDateHeader(
             modifier = Modifier.testTag("clock_date_header")
         ) {
             Text(
-                text = formattedTime,
+                text = clock.time,
                 style = MaterialTheme.typography.displayMedium,
                 color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.testTag("home_clock_text")
+                modifier = Modifier
+                    .clickable(onClickLabel = stringResource(R.string.open_alarms_action), onClick = onClockClick)
+                    .testTag("home_clock_text")
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = formattedDate,
+                text = clock.date,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.testTag("home_date_text")
+                modifier = Modifier
+                    .clickable(onClickLabel = stringResource(R.string.open_calendar_action), onClick = onDateClick)
+                    .testTag("home_date_text")
             )
         }
 
