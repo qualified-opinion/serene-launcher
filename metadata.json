@@ -1,6 +1,0 @@
-{
-  "name": "Serene Launcher",
-  "description": "A minimalist, completely offline Android home screen launcher inspired by Olauncher and Niagara Launcher.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
