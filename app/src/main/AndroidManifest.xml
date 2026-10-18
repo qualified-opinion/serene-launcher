@@ -24,7 +24,6 @@
             android:exported="true"
             android:clearTaskOnLaunch="true"
             android:launchMode="singleTask"
-            android:resumeWhilePaused="true"
             android:stateNotNeeded="true"
             android:taskAffinity=""
             android:windowSoftInputMode="adjustResize"
