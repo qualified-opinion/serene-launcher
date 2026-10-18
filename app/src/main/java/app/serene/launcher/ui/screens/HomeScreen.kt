@@ -1,5 +1,6 @@
 package app.serene.launcher.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -43,6 +45,9 @@ import app.serene.launcher.R
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.ui.components.MinimalClockDateHeader
 import app.serene.launcher.ui.components.PinnedAppRow
+
+/** How far an upward swipe on Home must travel before it opens the app drawer. */
+private val OpenDrawerSwipeThreshold = 48.dp
 
 @Composable
 fun HomeScreen(
@@ -57,7 +62,12 @@ fun HomeScreen(
     onToggleIcons: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Home is the bottom of the back stack: swallow Back so the system doesn't
+    // finish the launcher and immediately restart it.
+    BackHandler {}
+
     var cumulativeUpwardDrag by remember { mutableFloatStateOf(0f) }
+    val openDrawerThresholdPx = with(LocalDensity.current) { OpenDrawerSwipeThreshold.toPx() }
 
     Box(
         modifier = modifier
@@ -66,7 +76,7 @@ fun HomeScreen(
                 detectVerticalDragGestures(
                     onDragStart = { cumulativeUpwardDrag = 0f },
                     onDragEnd = {
-                        if (cumulativeUpwardDrag < -72f) {
+                        if (cumulativeUpwardDrag < -openDrawerThresholdPx) {
                             onOpenDrawer()
                         }
                         cumulativeUpwardDrag = 0f
