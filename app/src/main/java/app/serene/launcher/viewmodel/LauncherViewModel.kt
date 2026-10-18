@@ -1,13 +1,14 @@
 package app.serene.launcher.viewmodel
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import app.serene.launcher.data.AppsRepository
 import app.serene.launcher.data.InstalledAppsRepository
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.data.LauncherUserPreferences
+import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.LauncherUiState
 import kotlinx.coroutines.Job
@@ -17,13 +18,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 class LauncherViewModel(
-    application: Application,
-    private val installedAppsRepository: InstalledAppsRepository,
+    private val installedAppsRepository: AppsRepository,
     private val preferencesRepository: LauncherPreferencesRepository
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _rawInstalledApps = MutableStateFlow<List<AppItem>>(emptyList())
     private val _isLoadingApps = MutableStateFlow(true)
@@ -90,8 +89,8 @@ class LauncherViewModel(
         }
 
         val pinnedApps = allAppsWithPin.filter { it.isPinned }
-        val filteredDrawerApps = filterAppsByQuery(allAppsWithPin, query)
-        val alphabetMap = buildAlphabetIndexMap(filteredDrawerApps)
+        val filteredDrawerApps = AppSearch.filter(allAppsWithPin, query)
+        val alphabetMap = AppSearch.alphabetIndex(filteredDrawerApps)
 
         return LauncherUiState(
             isLoading = isLoading,
@@ -140,7 +139,7 @@ class LauncherViewModel(
         val isTypingForward = trimmed.length > previousQuery.trim().length
 
         if (currentState.autoLaunchSingleMatch && isTypingForward && trimmed.isNotEmpty()) {
-            val matches = filterAppsByQuery(currentState.allApps, trimmed)
+            val matches = AppSearch.filter(currentState.allApps, trimmed)
             if (matches.size == 1) {
                 val matchedApp = matches.first()
                 _searchQuery.value = ""
@@ -231,38 +230,14 @@ class LauncherViewModel(
         }
     }
 
-    private fun filterAppsByQuery(apps: List<AppItem>, query: String): List<AppItem> {
-        val trimmed = query.trim()
-        if (trimmed.isEmpty()) return apps
-        val lowerQuery = trimmed.lowercase(Locale.getDefault())
-
-        val (prefixMatches, containsMatches) = apps
-            .filter { it.label.lowercase(Locale.getDefault()).contains(lowerQuery) }
-            .partition { it.label.lowercase(Locale.getDefault()).startsWith(lowerQuery) }
-
-        return prefixMatches + containsMatches
-    }
-
-    private fun buildAlphabetIndexMap(apps: List<AppItem>): Map<Char, Int> {
-        val map = mutableMapOf<Char, Int>()
-        apps.forEachIndexed { index, app ->
-            val letter = app.firstLetterSection
-            if (!map.containsKey(letter)) {
-                map[letter] = index
-            }
-        }
-        return map
-    }
-
     class Factory(
         private val application: Application,
-        private val installedAppsRepository: InstalledAppsRepository = InstalledAppsRepository(application),
+        private val installedAppsRepository: AppsRepository = InstalledAppsRepository(application),
         private val preferencesRepository: LauncherPreferencesRepository = LauncherPreferencesRepository(application)
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return LauncherViewModel(
-                application = application,
                 installedAppsRepository = installedAppsRepository,
                 preferencesRepository = preferencesRepository
             ) as T

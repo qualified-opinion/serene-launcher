@@ -20,14 +20,14 @@ import java.util.Locale
 
 class InstalledAppsRepository(
     private val context: Context
-) {
+) : AppsRepository {
     /**
      * Loads all launchable applications installed on the device via PackageManager.
      * Also supplements missing standard phone utilities with system intent entries
      * so that even on a minimal Android container, the user has a full alphabetical
      * set of apps to search, scrub, pin, and launch offline.
      */
-    suspend fun loadInstalledApps(): List<AppItem> = withContext(Dispatchers.IO) {
+    override suspend fun loadInstalledApps(): List<AppItem> = withContext(Dispatchers.IO) {
         val pm = context.packageManager
         val ownPackage = context.packageName
 
@@ -225,7 +225,7 @@ class InstalledAppsRepository(
     /**
      * Selects a sensible initial set of up to 5 essential app IDs to pin on first run.
      */
-    fun selectInitialPinnedIds(allApps: List<AppItem>): Set<String> {
+    override fun selectInitialPinnedIds(allApps: List<AppItem>): Set<String> {
         val preferredNames = listOf("Phone", "Messages", "Camera", "Settings", "Clock", "Notes", "Calendar")
         val selected = mutableSetOf<String>()
         for (preferred in preferredNames) {
@@ -248,7 +248,7 @@ class InstalledAppsRepository(
      * Launches the selected app via its explicit ComponentName, package launch intent,
      * or fallback system intent action.
      */
-    fun launchApp(app: AppItem): Result<String> {
+    override fun launchApp(app: AppItem): Result<String> {
         val pm = context.packageManager
         return try {
             // 1. Try explicit component launch if activityName is present
@@ -306,7 +306,7 @@ class InstalledAppsRepository(
     /**
      * Opens the Android system App Info page for the given app package.
      */
-    fun openAppInfo(app: AppItem): Result<String> {
+    override fun openAppInfo(app: AppItem): Result<String> {
         return try {
             val targetPackage = if (app.id.startsWith("system/")) context.packageName else app.packageName
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
