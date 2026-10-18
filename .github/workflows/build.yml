@@ -28,13 +28,13 @@ jobs:
           fi
       - name: Upload lint report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: lint-report
           path: app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
       - name: Upload debug APK
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: serene-launcher-debug
           path: app/build/outputs/apk/debug/*.apk
