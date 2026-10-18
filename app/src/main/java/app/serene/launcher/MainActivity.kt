@@ -1,9 +1,6 @@
 package app.serene.launcher
 
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,11 +22,9 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.serene.launcher.ui.components.AppContextActionSheet
@@ -50,29 +45,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-            // Listen for package additions/removals offline to keep the app drawer fresh
-            val context = LocalContext.current
-            DisposableEffect(context) {
-                val receiver = object : BroadcastReceiver() {
-                    override fun onReceive(ctx: Context?, intent: Intent?) {
-                        viewModel.refreshInstalledApps()
-                    }
-                }
-                val filter = IntentFilter().apply {
-                    addAction(Intent.ACTION_PACKAGE_ADDED)
-                    addAction(Intent.ACTION_PACKAGE_REMOVED)
-                    addAction(Intent.ACTION_PACKAGE_CHANGED)
-                    addDataScheme("package")
-                }
-                context.registerReceiver(receiver, filter)
-                onDispose {
-                    try {
-                        context.unregisterReceiver(receiver)
-                    } catch (_: Exception) {
-                    }
-                }
-            }
 
             SereneLauncherTheme(darkTheme = uiState.isDarkTheme) {
                 SereneLauncherRoot(

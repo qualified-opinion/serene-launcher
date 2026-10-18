@@ -35,10 +35,14 @@ class LauncherViewModel(
     val uiState: StateFlow<LauncherUiState> = _uiState.asStateFlow()
 
     private var statusClearJob: Job? = null
+    private var refreshJob: Job? = null
 
     init {
         observeState()
         refreshInstalledApps()
+        viewModelScope.launch {
+            installedAppsRepository.appChanges().collect { refreshInstalledApps() }
+        }
     }
 
     private fun observeState() {
@@ -110,7 +114,9 @@ class LauncherViewModel(
     }
 
     fun refreshInstalledApps() {
-        viewModelScope.launch {
+        // Only the newest refresh may publish its list, so a slow older one can't overwrite it.
+        refreshJob?.cancel()
+        refreshJob = viewModelScope.launch {
             _isLoadingApps.value = true
             val loaded = installedAppsRepository.loadInstalledApps()
             _rawInstalledApps.value = loaded
@@ -145,7 +151,8 @@ class LauncherViewModel(
                 _searchQuery.value = ""
                 _isDrawerOpen.value = false
                 installedAppsRepository.launchApp(matchedApp)
-                showTransientMessage("Auto-opened ${matchedApp.label}")
+                    .onSuccess { showTransientMessage("Auto-opened ${matchedApp.label}") }
+                    .onFailure { showTransientMessage("Can't open ${matchedApp.label}") }
             }
         }
     }
@@ -155,13 +162,16 @@ class LauncherViewModel(
     }
 
     fun launchApp(app: AppItem) {
-        installedAppsRepository.launchApp(app)
         _selectedAppForMenu.value = null
-        if (_isDrawerOpen.value) {
-            _searchQuery.value = ""
-            _isDrawerOpen.value = false
-        }
-        showTransientMessage("Opening ${app.label}")
+        installedAppsRepository.launchApp(app)
+            .onSuccess {
+                if (_isDrawerOpen.value) {
+                    _searchQuery.value = ""
+                    _isDrawerOpen.value = false
+                }
+                showTransientMessage("Opening ${app.label}")
+            }
+            .onFailure { showTransientMessage("Can't open ${app.label}") }
     }
 
     fun onAppLongPress(app: AppItem) {
@@ -188,7 +198,7 @@ class LauncherViewModel(
     fun openAppInfo(app: AppItem) {
         _selectedAppForMenu.value = null
         installedAppsRepository.openAppInfo(app)
-        showTransientMessage("App info: ${app.label}")
+            .onFailure { showTransientMessage("Can't show app info for ${app.label}") }
     }
 
     fun toggleTheme() {

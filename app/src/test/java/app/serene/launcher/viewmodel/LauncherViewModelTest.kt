@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -105,6 +106,20 @@ class LauncherViewModelTest {
 
         assertTrue(appsRepository.launched.isEmpty())
         assertTrue(viewModel.uiState.value.isDrawerOpen)
+    }
+
+    @Test
+    fun `an app that fails to open keeps the drawer open and says so`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        viewModel.openDrawer()
+        advanceUntilIdle()
+        appsRepository.failLaunches = true
+
+        viewModel.launchApp(camera)
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value.isDrawerOpen)
+        assertEquals("Can't open Camera", viewModel.uiState.value.statusMessage)
     }
 
     @Test
