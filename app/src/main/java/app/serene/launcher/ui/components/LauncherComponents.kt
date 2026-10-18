@@ -267,9 +267,25 @@ fun PinnedAppRow(
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
         )
+
+        if (app.isWorkProfile) {
+            WorkProfileLabel(modifier = Modifier.padding(start = 10.dp))
+        }
     }
+}
+
+/** Small "Work" tag so work-profile apps can be told apart from personal ones in text mode. */
+@Composable
+private fun WorkProfileLabel(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.work_profile_label),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -317,8 +333,13 @@ fun DrawerAppRow(
                 ),
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
+
+            if (app.isWorkProfile) {
+                WorkProfileLabel(modifier = Modifier.padding(start = 10.dp))
+            }
 
             if (app.isPinned) {
                 Spacer(modifier = Modifier.width(10.dp))

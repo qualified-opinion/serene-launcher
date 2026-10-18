@@ -5,7 +5,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import app.serene.launcher.data.InstalledAppsRepository
 import app.serene.launcher.data.LauncherPreferencesRepository
-import app.serene.launcher.viewmodel.LauncherViewModel
+import app.serene.launcher.testing.app
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -28,14 +28,43 @@ class ExampleRobolectricTest {
     }
 
     @Test
-    fun `installed apps repository loads sorted apps and initial pinned selection`() = runBlocking {
+    fun `installed apps repository loads without crashing`() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val apps = InstalledAppsRepository(context).loadInstalledApps()
+
+        assertTrue("Launcher should never list itself", apps.none { it.packageName == context.packageName })
+    }
+
+    @Test
+    fun `initial pins prefer exact matches and skip work apps`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val repo = InstalledAppsRepository(context)
-        val apps = repo.loadInstalledApps()
+        val workPhone = app("Phone", id = "work.phone/Main@10").copy(profileSerial = 10, isWorkProfile = true)
+        val apps = listOf(
+            app("Phone Backup"),
+            app("Phone"),
+            workPhone,
+            app("Camera"),
+            app("Weather")
+        )
 
-        assertTrue("Expected offline app list to be non-empty", apps.isNotEmpty())
-        val initialPins = repo.selectInitialPinnedIds(apps)
-        assertTrue("Expected default initial pins to be populated", initialPins.isNotEmpty())
+        val pins = repo.selectInitialPinnedIds(apps)
+
+        assertTrue(pins.contains("pkg.phone/Main"))
+        assertFalse(pins.contains("pkg.phone backup/Main"))
+        assertFalse(pins.contains(workPhone.id))
+        assertTrue(pins.contains("pkg.camera/Main"))
+        assertFalse(pins.contains("pkg.weather/Main"))
+    }
+
+    @Test
+    fun `initial pins fall back to first personal apps when nothing matches`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val apps = listOf("Alpha", "Bravo", "Charlie", "Delta", "Echo").map { app(it) }
+
+        val pins = InstalledAppsRepository(context).selectInitialPinnedIds(apps)
+
+        assertEquals(apps.take(4).map { it.id }.toSet(), pins)
     }
 
     @Test

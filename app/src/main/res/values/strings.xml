@@ -20,4 +20,5 @@
     <string name="close_drawer_cd">Back to Home</string>
     <string name="clear_search_cd">Clear search query</string>
     <string name="long_press_hint">Tip: Long-press any app to pin or unpin</string>
+    <string name="work_profile_label">Work</string>
 </resources>

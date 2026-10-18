@@ -30,9 +30,9 @@ data class AppItem(
     val iconBitmap: ImageBitmap? = null,
     val fallbackGlyph: FallbackIconGlyph = FallbackIconGlyph.GENERIC,
     val isPinned: Boolean = false,
-    val systemIntentAction: String? = null,
-    val systemIntentCategory: String? = null,
-    val systemIntentDataUri: String? = null
+    /** Serial number of the Android user profile the app belongs to (personal, work, ...). */
+    val profileSerial: Long = 0L,
+    val isWorkProfile: Boolean = false
 ) {
     val firstLetterSection: Char
         get() {
