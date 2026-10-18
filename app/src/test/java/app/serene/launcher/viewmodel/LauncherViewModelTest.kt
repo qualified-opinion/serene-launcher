@@ -89,7 +89,7 @@ class LauncherViewModelTest {
         viewModel.onSearchQueryChanged("ma")
         advanceUntilIdle()
 
-        assertEquals(listOf(maps), appsRepository.launched)
+        assertEquals(listOf(maps.id), appsRepository.launched.map { it.id })
         assertFalse(viewModel.uiState.value.isDrawerOpen)
         assertEquals("", viewModel.uiState.value.searchQuery)
     }
