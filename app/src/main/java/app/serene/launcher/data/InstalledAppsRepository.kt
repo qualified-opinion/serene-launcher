@@ -8,6 +8,7 @@ import android.os.Looper
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
+import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.FallbackIconGlyph
 import kotlinx.coroutines.Dispatchers
@@ -58,7 +59,7 @@ class InstalledAppsRepository(
                 }
         }
             .distinctBy { it.id }
-            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
+            .let { AppSearch.sort(it) }
     }
 
     override fun appChanges(): Flow<Unit> = callbackFlow {

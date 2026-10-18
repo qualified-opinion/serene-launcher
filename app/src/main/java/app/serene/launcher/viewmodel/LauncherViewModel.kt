@@ -102,7 +102,7 @@ class LauncherViewModel(
             allApps = allAppsWithPin,
             filteredDrawerApps = filteredDrawerApps,
             alphabetIndexMap = alphabetMap,
-            availableLetters = ('A'..'Z').toList(),
+            availableLetters = AppSearch.railLetters,
             searchQuery = query,
             isDrawerOpen = isDrawerOpen,
             isDarkTheme = prefs.isDarkTheme,
@@ -137,21 +137,25 @@ class LauncherViewModel(
     }
 
     fun onSearchQueryChanged(newQuery: String) {
-        val previousQuery = _searchQuery.value
+        val previousQuery = _searchQuery.value.trim()
         _searchQuery.value = newQuery
 
         val currentState = _uiState.value
         val trimmed = newQuery.trim()
-        val isTypingForward = trimmed.length > previousQuery.trim().length
+        // One more character than before: typed, not pasted or autocompleted.
+        val typedOneCharacter = trimmed.length == previousQuery.length + 1 && trimmed.startsWith(previousQuery)
 
-        if (currentState.autoLaunchSingleMatch && isTypingForward && trimmed.isNotEmpty()) {
+        if (currentState.autoLaunchSingleMatch && typedOneCharacter) {
             val matches = AppSearch.filter(currentState.allApps, trimmed)
-            if (matches.size == 1) {
-                val matchedApp = matches.first()
-                _searchQuery.value = ""
-                _isDrawerOpen.value = false
+            val matchedApp = matches.singleOrNull()
+            // Only a label that starts with the query opens by itself, never a word-start or initials match.
+            if (matchedApp != null && AppSearch.isPrefixMatch(matchedApp.label, trimmed)) {
                 installedAppsRepository.launchApp(matchedApp)
-                    .onSuccess { showTransientMessage("Auto-opened ${matchedApp.label}") }
+                    .onSuccess {
+                        _searchQuery.value = ""
+                        _isDrawerOpen.value = false
+                        showTransientMessage("Auto-opened ${matchedApp.label}")
+                    }
                     .onFailure { showTransientMessage("Can't open ${matchedApp.label}") }
             }
         }

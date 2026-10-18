@@ -1,5 +1,7 @@
 package app.serene.launcher.model
 
+import app.serene.launcher.domain.AppSearch
+
 enum class FallbackIconGlyph {
     GENERIC,
     PHONE,
@@ -32,10 +34,7 @@ data class AppItem(
     val isWorkProfile: Boolean = false
 ) {
     val firstLetterSection: Char
-        get() {
-            val first = label.trim().firstOrNull()?.uppercaseChar() ?: '#'
-            return if (first in 'A'..'Z') first else '#'
-        }
+        get() = AppSearch.sectionOf(label)
 }
 
 data class LauncherUiState(
@@ -44,7 +43,7 @@ data class LauncherUiState(
     val allApps: List<AppItem> = emptyList(),
     val filteredDrawerApps: List<AppItem> = emptyList(),
     val alphabetIndexMap: Map<Char, Int> = emptyMap(),
-    val availableLetters: List<Char> = ('A'..'Z').toList(),
+    val availableLetters: List<Char> = AppSearch.railLetters,
     val searchQuery: String = "",
     val isDrawerOpen: Boolean = false,
     val isDarkTheme: Boolean = false,

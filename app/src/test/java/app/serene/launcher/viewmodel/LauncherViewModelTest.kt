@@ -87,6 +87,7 @@ class LauncherViewModelTest {
         viewModel.openDrawer()
         advanceUntilIdle()
 
+        viewModel.onSearchQueryChanged("m") // Camera and Maps both still match
         viewModel.onSearchQueryChanged("ma")
         advanceUntilIdle()
 
@@ -102,6 +103,33 @@ class LauncherViewModelTest {
         advanceUntilIdle()
 
         viewModel.onSearchQueryChanged("c")
+        advanceUntilIdle()
+
+        assertTrue(appsRepository.launched.isEmpty())
+        assertTrue(viewModel.uiState.value.isDrawerOpen)
+    }
+
+    @Test
+    fun `pasting a query that matches one app does not open it`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        viewModel.openDrawer()
+        advanceUntilIdle()
+
+        viewModel.onSearchQueryChanged("map")
+        advanceUntilIdle()
+
+        assertTrue(appsRepository.launched.isEmpty())
+        assertEquals(listOf("Maps"), viewModel.uiState.value.filteredDrawerApps.map { it.label })
+    }
+
+    @Test
+    fun `a single match that only starts a later word does not open by itself`() = runTest(dispatcher) {
+        appsRepository = FakeAppsRepository(listOf(calendar, app("Google Maps")))
+        val viewModel = loadedViewModel()
+        viewModel.openDrawer()
+        advanceUntilIdle()
+
+        viewModel.onSearchQueryChanged("m")
         advanceUntilIdle()
 
         assertTrue(appsRepository.launched.isEmpty())
