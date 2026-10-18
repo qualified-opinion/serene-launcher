@@ -60,6 +60,11 @@ android {
     buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
+  lint {
+    // Fail the build on lint errors; warnings are reported but don't block.
+    abortOnError = true
+    checkDependencies = false
+  }
   dependenciesInfo {
     // Only Google Play reads this block, and the app is distributed as a plain APK.
     includeInApk = false
