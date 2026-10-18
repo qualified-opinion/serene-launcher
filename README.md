@@ -10,7 +10,7 @@ Then make it your home screen: **Settings → Apps → Default apps → Home app
 
 ## Build it yourself
 
-You need JDK 17 and the Android SDK (Android Studio installs both).
+You need JDK 21 and the Android SDK (Android Studio installs both). JDK 21 is required by the Robolectric unit tests, which run against Android 16 (API 36).
 
 ```sh
 ./gradlew assembleDebug      # app/build/outputs/apk/debug/app-debug.apk
