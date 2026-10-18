@@ -87,6 +87,7 @@ class LauncherViewModelTest {
         viewModel.openDrawer()
         advanceUntilIdle()
 
+        viewModel.onSearchQueryChanged("m") // Camera and Maps both still match
         viewModel.onSearchQueryChanged("ma")
         advanceUntilIdle()
 
