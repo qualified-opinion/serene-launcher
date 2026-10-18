@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.serene.launcher.R
@@ -182,7 +183,7 @@ fun HomeScreen(
                         )
                         Text(
                             text = if (totalInstalledCount > 0) {
-                                "All apps ($totalInstalledCount)"
+                                pluralStringResource(R.plurals.all_apps_count, totalInstalledCount, totalInstalledCount)
                             } else {
                                 stringResource(R.string.open_app_drawer)
                             },

@@ -1,24 +1,45 @@
 package app.serene.launcher.ui.theme
 
+import androidx.annotation.FontRes
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import app.serene.launcher.R
 
-val PlusJakartaSansFontFamily = FontFamily(
-    Font(R.font.plus_jakarta_sans, FontWeight.Light),
-    Font(R.font.plus_jakarta_sans, FontWeight.Normal),
-    Font(R.font.plus_jakarta_sans, FontWeight.Medium),
-    Font(R.font.plus_jakarta_sans, FontWeight.SemiBold)
+/** Weights the app's text styles use; each maps to a point on the font's weight axis. */
+private val UsedWeights = listOf(
+    FontWeight.Light,
+    FontWeight.Normal,
+    FontWeight.Medium,
+    FontWeight.SemiBold,
+    FontWeight.Bold
 )
 
-val DmSansFontFamily = FontFamily(
-    Font(R.font.dm_sans, FontWeight.Normal),
-    Font(R.font.dm_sans, FontWeight.Medium)
+/**
+ * Builds a family from one variable font file, so every weight is real rather than synthesised.
+ * Android 7.x can't apply font variations and shows the file's default (Regular) weight instead.
+ */
+@OptIn(ExperimentalTextApi::class)
+private fun variableFontFamily(@FontRes resId: Int, vararg extra: FontVariation.Setting) = FontFamily(
+    UsedWeights.map { weight ->
+        Font(
+            resId = resId,
+            weight = weight,
+            variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight), *extra)
+        )
+    }
 )
+
+// Plus Jakarta Sans and DM Sans, both SIL Open Font License (see third_party/fonts).
+val PlusJakartaSansFontFamily = variableFontFamily(R.font.plus_jakarta_sans)
+
+// DM Sans also has an optical-size axis; 14 suits the 12–22sp sizes it is used at.
+val DmSansFontFamily = variableFontFamily(R.font.dm_sans, FontVariation.Setting("opsz", 14f))
 
 val Typography = Typography(
     // Live clock display on home screen

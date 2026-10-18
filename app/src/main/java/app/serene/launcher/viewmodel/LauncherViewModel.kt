@@ -1,9 +1,11 @@
 package app.serene.launcher.viewmodel
 
 import android.app.Application
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import app.serene.launcher.R
 import app.serene.launcher.data.AppsRepository
 import app.serene.launcher.data.InstalledAppsRepository
 import app.serene.launcher.data.LauncherPreferencesRepository
@@ -11,6 +13,7 @@ import app.serene.launcher.data.LauncherUserPreferences
 import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.LauncherUiState
+import app.serene.launcher.model.StatusMessage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +32,7 @@ class LauncherViewModel(
     private val _searchQuery = MutableStateFlow("")
     private val _isDrawerOpen = MutableStateFlow(false)
     private val _selectedAppForMenu = MutableStateFlow<AppItem?>(null)
-    private val _statusMessage = MutableStateFlow<String?>(null)
+    private val _statusMessage = MutableStateFlow<StatusMessage?>(null)
 
     private val _uiState = MutableStateFlow(LauncherUiState())
     val uiState: StateFlow<LauncherUiState> = _uiState.asStateFlow()
@@ -86,7 +89,7 @@ class LauncherViewModel(
         query: String,
         isDrawerOpen: Boolean,
         selectedApp: AppItem?,
-        statusMessage: String?
+        statusMessage: StatusMessage?
     ): LauncherUiState {
         val allAppsWithPin = rawApps.map { app ->
             app.copy(isPinned = prefs.pinnedAppIds.contains(app.id))
@@ -154,9 +157,9 @@ class LauncherViewModel(
                     .onSuccess {
                         _searchQuery.value = ""
                         _isDrawerOpen.value = false
-                        showTransientMessage("Auto-opened ${matchedApp.label}")
+                        showTransientMessage(StatusMessage(R.string.status_auto_opened, listOf(matchedApp.label)))
                     }
-                    .onFailure { showTransientMessage("Can't open ${matchedApp.label}") }
+                    .onFailure { showTransientMessage(StatusMessage(R.string.status_cant_open, listOf(matchedApp.label))) }
             }
         }
     }
@@ -173,9 +176,9 @@ class LauncherViewModel(
                     _searchQuery.value = ""
                     _isDrawerOpen.value = false
                 }
-                showTransientMessage("Opening ${app.label}")
+                showTransientMessage(StatusMessage(R.string.status_opening, listOf(app.label)))
             }
-            .onFailure { showTransientMessage("Can't open ${app.label}") }
+            .onFailure { showTransientMessage(StatusMessage(R.string.status_cant_open, listOf(app.label))) }
     }
 
     fun onAppLongPress(app: AppItem) {
@@ -190,31 +193,27 @@ class LauncherViewModel(
         viewModelScope.launch {
             val isNowPinned = preferencesRepository.togglePinApp(app.id)
             _selectedAppForMenu.value = null
-            val message = if (isNowPinned) {
-                "Pinned ${app.label} to Home"
-            } else {
-                "Unpinned ${app.label} from Home"
-            }
-            showTransientMessage(message)
+            val messageRes = if (isNowPinned) R.string.status_pinned else R.string.status_unpinned
+            showTransientMessage(StatusMessage(messageRes, listOf(app.label)))
         }
     }
 
     /** Called when a system screen opened from Home (alarms, calendar) isn't available on this phone. */
-    fun onSystemScreenUnavailable(name: String) {
-        showTransientMessage("Can't open $name")
+    fun onSystemScreenUnavailable(@StringRes messageRes: Int) {
+        showTransientMessage(StatusMessage(messageRes))
     }
 
     fun openAppInfo(app: AppItem) {
         _selectedAppForMenu.value = null
         installedAppsRepository.openAppInfo(app)
-            .onFailure { showTransientMessage("Can't show app info for ${app.label}") }
+            .onFailure { showTransientMessage(StatusMessage(R.string.status_cant_show_app_info, listOf(app.label))) }
     }
 
     fun toggleTheme() {
         viewModelScope.launch {
             val nextDark = !_uiState.value.isDarkTheme
             preferencesRepository.setDarkTheme(nextDark)
-            showTransientMessage(if (nextDark) "Dark theme enabled" else "Warm paper theme enabled")
+            showTransientMessage(StatusMessage(if (nextDark) R.string.status_dark_theme else R.string.status_light_theme))
         }
     }
 
@@ -222,7 +221,7 @@ class LauncherViewModel(
         viewModelScope.launch {
             val nextIcons = !_uiState.value.showAppIcons
             preferencesRepository.setShowAppIcons(nextIcons)
-            showTransientMessage(if (nextIcons) "Small monochrome icons on" else "Pure text mode on")
+            showTransientMessage(StatusMessage(if (nextIcons) R.string.status_icons_on else R.string.status_icons_off))
         }
     }
 
@@ -231,7 +230,7 @@ class LauncherViewModel(
             val nextAuto = !_uiState.value.autoLaunchSingleMatch
             preferencesRepository.setAutoLaunchSingleMatch(nextAuto)
             showTransientMessage(
-                if (nextAuto) "Auto-open single search match on" else "Auto-open single search match off"
+                StatusMessage(if (nextAuto) R.string.status_auto_open_on else R.string.status_auto_open_off)
             )
         }
     }
@@ -240,7 +239,7 @@ class LauncherViewModel(
         _statusMessage.value = null
     }
 
-    private fun showTransientMessage(message: String) {
+    private fun showTransientMessage(message: StatusMessage) {
         statusClearJob?.cancel()
         _statusMessage.value = message
         statusClearJob = viewModelScope.launch {
