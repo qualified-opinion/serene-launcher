@@ -22,12 +22,15 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.serene.launcher.data.AppIconLoader
 import app.serene.launcher.ui.components.AppContextActionSheet
+import app.serene.launcher.ui.components.LocalAppIconLoader
 import app.serene.launcher.ui.components.TransientStatusPill
 import app.serene.launcher.ui.screens.AppDrawerScreen
 import app.serene.launcher.ui.screens.HomeScreen
@@ -47,9 +50,11 @@ class MainActivity : ComponentActivity() {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
             SereneLauncherTheme(darkTheme = uiState.isDarkTheme) {
-                SereneLauncherRoot(
-                    viewModel = viewModel
-                )
+                CompositionLocalProvider(LocalAppIconLoader provides AppIconLoader.get(this)) {
+                    SereneLauncherRoot(
+                        viewModel = viewModel
+                    )
+                }
             }
         }
     }

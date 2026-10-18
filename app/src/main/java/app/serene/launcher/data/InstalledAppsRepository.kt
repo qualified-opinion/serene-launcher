@@ -3,16 +3,11 @@ package app.serene.launcher.data
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.LauncherApps
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.FallbackIconGlyph
 import kotlinx.coroutines.Dispatchers
@@ -56,8 +51,6 @@ class InstalledAppsRepository(
                         label = label,
                         packageName = component.packageName,
                         activityName = component.className,
-                        // The badged icon carries the briefcase overlay for work apps.
-                        iconBitmap = runCatching { drawableToSmallImageBitmap(info.getBadgedIcon(0)) }.getOrNull(),
                         fallbackGlyph = inferFallbackGlyph(label),
                         profileSerial = serial,
                         isWorkProfile = isWork
@@ -136,14 +129,6 @@ class InstalledAppsRepository(
     private fun appId(component: ComponentName, serial: Long, isWork: Boolean): String {
         val base = "${component.packageName}/${component.className}"
         return if (isWork) "$base@$serial" else base
-    }
-
-    private fun drawableToSmallImageBitmap(drawable: Drawable, sizePx: Int = 64): ImageBitmap {
-        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, sizePx, sizePx)
-        drawable.draw(canvas)
-        return bitmap.asImageBitmap()
     }
 
     private fun inferFallbackGlyph(label: String): FallbackIconGlyph {

@@ -64,8 +64,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -76,6 +78,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -84,6 +87,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.serene.launcher.R
+import app.serene.launcher.data.AppIconLoader
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.FallbackIconGlyph
 import kotlinx.coroutines.delay
@@ -179,22 +183,37 @@ fun MinimalClockDateHeader(
     }
 }
 
+/** Supplies app icons to [MonochromeAppIcon]; null (as in previews) shows the fallback glyphs. */
+val LocalAppIconLoader = staticCompositionLocalOf<AppIconLoader?> { null }
+
+private val AppIconSize = 20.dp
+
 @Composable
 fun MonochromeAppIcon(
     app: AppItem,
     modifier: Modifier = Modifier
 ) {
+    val loader = LocalAppIconLoader.current
+    val sizePx = with(LocalDensity.current) { AppIconSize.roundToPx() }
+    val icon by produceState(initialValue = loader?.cached(app, sizePx), app.id, sizePx, loader) {
+        if (value == null && loader != null) value = loader.load(app, sizePx)
+    }
     val grayscaleMatrix = remember {
         ColorMatrix().apply { setToSaturation(0f) }
     }
 
-    if (app.iconBitmap != null) {
+    val loaded = icon
+    if (loaded != null) {
         Image(
-            bitmap = app.iconBitmap,
+            bitmap = loaded.bitmap,
             contentDescription = null,
-            colorFilter = ColorFilter.colorMatrix(grayscaleMatrix),
+            colorFilter = if (loaded.isMonochrome) {
+                ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                ColorFilter.colorMatrix(grayscaleMatrix)
+            },
             modifier = modifier
-                .size(20.dp)
+                .size(AppIconSize)
                 .clip(RoundedCornerShape(5.dp))
                 .alpha(0.82f)
         )
