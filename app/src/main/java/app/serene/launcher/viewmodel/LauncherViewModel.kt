@@ -199,6 +199,11 @@ class LauncherViewModel(
         }
     }
 
+    /** Called when a system screen opened from Home (alarms, calendar) isn't available on this phone. */
+    fun onSystemScreenUnavailable(name: String) {
+        showTransientMessage("Can't open $name")
+    }
+
     fun openAppInfo(app: AppItem) {
         _selectedAppForMenu.value = null
         installedAppsRepository.openAppInfo(app)

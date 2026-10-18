@@ -1,7 +1,11 @@
 package app.serene.launcher
 
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.provider.AlarmClock
+import android.provider.CalendarContract
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,6 +30,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.serene.launcher.data.AppIconLoader
@@ -74,6 +79,7 @@ fun SereneLauncherRoot(
     viewModel: LauncherViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -141,7 +147,21 @@ fun SereneLauncherRoot(
                         onAppLongPress = viewModel::onAppLongPress,
                         onOpenDrawer = viewModel::openDrawer,
                         onToggleTheme = viewModel::toggleTheme,
-                        onToggleIcons = viewModel::toggleShowAppIcons
+                        onToggleIcons = viewModel::toggleShowAppIcons,
+                        onClockClick = {
+                            context.openSystemScreen(Intent(AlarmClock.ACTION_SHOW_ALARMS)) {
+                                viewModel.onSystemScreenUnavailable("alarms")
+                            }
+                        },
+                        onDateClick = {
+                            val today = CalendarContract.CONTENT_URI.buildUpon()
+                                .appendPath("time")
+                                .appendPath(System.currentTimeMillis().toString())
+                                .build()
+                            context.openSystemScreen(Intent(Intent.ACTION_VIEW, today)) {
+                                viewModel.onSystemScreenUnavailable("calendar")
+                            }
+                        }
                     )
                 }
             }
@@ -166,5 +186,16 @@ fun SereneLauncherRoot(
                 )
             }
         }
+    }
+}
+
+/** Starts [intent], or calls [onUnavailable] if no app on the phone handles it. */
+private fun Context.openSystemScreen(intent: Intent, onUnavailable: () -> Unit) {
+    try {
+        startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+        onUnavailable()
+    } catch (_: SecurityException) {
+        onUnavailable()
     }
 }
