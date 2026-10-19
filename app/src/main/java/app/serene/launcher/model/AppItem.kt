@@ -47,9 +47,11 @@ data class LauncherUiState(
     val availableLetters: List<Char> = AppSearch.railLetters,
     val searchQuery: String = "",
     val isDrawerOpen: Boolean = false,
-    val isDarkTheme: Boolean = false,
+    val isSettingsOpen: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val showAppIcons: Boolean = false,
     val autoLaunchSingleMatch: Boolean = true,
+    val openKeyboardOnDrawer: Boolean = false,
     val selectedAppForMenu: AppItem? = null,
     val statusMessage: StatusMessage? = null
 )

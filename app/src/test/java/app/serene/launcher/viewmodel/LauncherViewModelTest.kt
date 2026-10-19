@@ -3,6 +3,7 @@ package app.serene.launcher.viewmodel
 import app.serene.launcher.R
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.model.StatusMessage
+import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.FakeAppsRepository
 import app.serene.launcher.testing.InMemoryPreferencesDataStore
 import app.serene.launcher.testing.app
@@ -72,7 +73,7 @@ class LauncherViewModelTest {
     @Test
     fun `typing filters the drawer`() = runTest(dispatcher) {
         val viewModel = loadedViewModel()
-        viewModel.toggleAutoLaunchSingleMatch() // turn auto-open off so typing only filters
+        viewModel.setAutoLaunchSingleMatch(false) // so typing only filters
         viewModel.openDrawer()
         advanceUntilIdle()
 
@@ -158,10 +159,39 @@ class LauncherViewModelTest {
     @Test
     fun `theme choice is saved`() = runTest(dispatcher) {
         val viewModel = loadedViewModel()
+        assertEquals(ThemeMode.SYSTEM, viewModel.uiState.value.themeMode)
 
-        viewModel.toggleTheme()
+        viewModel.setThemeMode(ThemeMode.DARK)
         advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.isDarkTheme)
+        assertEquals(ThemeMode.DARK, viewModel.uiState.value.themeMode)
+    }
+
+    @Test
+    fun `settings open and close`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+
+        viewModel.openSettings()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isSettingsOpen)
+
+        viewModel.closeSettings()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isSettingsOpen)
+    }
+
+    @Test
+    fun `drawer options are saved`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+
+        viewModel.setShowAppIcons(true)
+        viewModel.setAutoLaunchSingleMatch(false)
+        viewModel.setOpenKeyboardOnDrawer(true)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.showAppIcons)
+        assertFalse(state.autoLaunchSingleMatch)
+        assertTrue(state.openKeyboardOnDrawer)
     }
 }

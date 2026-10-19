@@ -34,13 +34,10 @@ import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.CloudQueue
-import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Language
-import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.MusicNote
@@ -49,7 +46,6 @@ import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -98,10 +94,7 @@ import app.serene.launcher.model.FallbackIconGlyph
 
 @Composable
 fun MinimalClockDateHeader(
-    isDarkTheme: Boolean,
-    showAppIcons: Boolean,
-    onToggleTheme: () -> Unit,
-    onToggleIcons: () -> Unit,
+    onOpenSettings: () -> Unit,
     onClockClick: () -> Unit,
     onDateClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -135,42 +128,18 @@ fun MinimalClockDateHeader(
             )
         }
 
-        // Minimalist utility toggles (Warm Light / Dark Theme & Pure Text / Small Monochrome Icons)
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
+        IconButton(
+            onClick = onOpenSettings,
+            modifier = Modifier
+                .size(48.dp)
+                .testTag("open_settings_button")
         ) {
-            IconButton(
-                onClick = onToggleIcons,
-                modifier = Modifier
-                    .size(48.dp)
-                    .testTag("icons_toggle_button")
-            ) {
-                Icon(
-                    imageVector = if (showAppIcons) Icons.Outlined.GridView else Icons.Outlined.TextFields,
-                    contentDescription = stringResource(R.string.toggle_icons_cd),
-                    tint = if (showAppIcons) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            IconButton(
-                onClick = onToggleTheme,
-                modifier = Modifier
-                    .size(48.dp)
-                    .testTag("theme_toggle_button")
-            ) {
-                Icon(
-                    imageVector = if (isDarkTheme) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
-                    contentDescription = stringResource(R.string.toggle_theme_cd),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            Icon(
+                imageVector = Icons.Outlined.Settings,
+                contentDescription = stringResource(R.string.settings_open_cd),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

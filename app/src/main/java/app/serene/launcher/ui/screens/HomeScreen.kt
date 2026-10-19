@@ -2,6 +2,7 @@ package app.serene.launcher.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,13 +55,11 @@ private val OpenDrawerSwipeThreshold = 48.dp
 fun HomeScreen(
     pinnedApps: List<AppItem>,
     totalInstalledCount: Int,
-    isDarkTheme: Boolean,
     showAppIcons: Boolean,
     onAppClick: (AppItem) -> Unit,
     onAppLongPress: (AppItem) -> Unit,
     onOpenDrawer: () -> Unit,
-    onToggleTheme: () -> Unit,
-    onToggleIcons: () -> Unit,
+    onOpenSettings: () -> Unit,
     onClockClick: () -> Unit,
     onDateClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -90,6 +89,10 @@ fun HomeScreen(
                     }
                 )
             }
+            // Long-pressing empty space opens Settings; app rows handle their own long-press.
+            .pointerInput(Unit) {
+                detectTapGestures(onLongPress = { onOpenSettings() })
+            }
             .testTag("home_screen"),
         contentAlignment = Alignment.TopCenter
     ) {
@@ -107,10 +110,7 @@ fun HomeScreen(
                     .weight(1f, fill = false)
             ) {
                 MinimalClockDateHeader(
-                    isDarkTheme = isDarkTheme,
-                    showAppIcons = showAppIcons,
-                    onToggleTheme = onToggleTheme,
-                    onToggleIcons = onToggleIcons,
+                    onOpenSettings = onOpenSettings,
                     onClockClick = onClockClick,
                     onDateClick = onDateClick
                 )

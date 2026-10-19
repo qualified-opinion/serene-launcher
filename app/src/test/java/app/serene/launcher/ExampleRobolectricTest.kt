@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import app.serene.launcher.data.InstalledAppsRepository
 import app.serene.launcher.data.LauncherPreferencesRepository
+import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.app
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -72,12 +73,12 @@ class ExampleRobolectricTest {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val prefsRepo = LauncherPreferencesRepository(context)
 
-        prefsRepo.setDarkTheme(true)
+        prefsRepo.setThemeMode(ThemeMode.DARK)
         prefsRepo.setShowAppIcons(true)
         prefsRepo.setPinState("system/calculator", true)
 
         val prefs = prefsRepo.preferencesFlow.first()
-        assertTrue(prefs.isDarkTheme)
+        assertEquals(ThemeMode.DARK, prefs.themeMode)
         assertTrue(prefs.showAppIcons)
         assertTrue(prefs.pinnedAppIds.contains("system/calculator"))
 
