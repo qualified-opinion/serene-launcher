@@ -13,10 +13,6 @@
     <string name="unpin_from_home">Unpin from Home</string>
     <string name="app_info">App info</string>
     <string name="pinned_badge">Pinned</string>
-    <string name="toggle_theme_cd">Switch between warm light and dark theme</string>
-    <string name="toggle_icons_cd">Toggle small monochrome app icons</string>
-    <string name="toggle_auto_launch_cd">Toggle auto-launch when search matches one app</string>
-    <string name="auto_launch_label">Auto-open</string>
     <string name="close_drawer_cd">Back to Home</string>
     <string name="clear_search_cd">Clear search query</string>
     <string name="long_press_hint">Tip: Long-press any app to pin or unpin</string>
@@ -48,10 +44,20 @@
     <string name="status_cant_open_calendar">Can\'t open calendar</string>
     <string name="status_pinned">Pinned %1$s to Home</string>
     <string name="status_unpinned">Unpinned %1$s from Home</string>
-    <string name="status_dark_theme">Dark theme on</string>
-    <string name="status_light_theme">Warm paper theme on</string>
-    <string name="status_icons_on">Small monochrome icons on</string>
-    <string name="status_icons_off">Pure text mode on</string>
-    <string name="status_auto_open_on">Auto-open single search match on</string>
-    <string name="status_auto_open_off">Auto-open single search match off</string>
+
+    <!-- Settings -->
+    <string name="settings_open_cd">Open settings</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back_cd">Back to Home</string>
+    <string name="settings_section_appearance">APPEARANCE</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">Follow system</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_show_icons">Show app icons</string>
+    <string name="settings_show_icons_summary">Small monochrome icons next to app names</string>
+    <string name="settings_section_drawer">APP DRAWER</string>
+    <string name="settings_auto_open">Open an app when only one matches</string>
+    <string name="settings_auto_open_summary">Typing the start of a name opens the app as soon as no other app matches</string>
+    <string name="settings_open_keyboard">Open the keyboard when the drawer opens</string>
 </resources>

@@ -25,7 +25,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Search
@@ -39,15 +38,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.serene.launcher.R
@@ -63,10 +65,9 @@ fun AppDrawerScreen(
     availableLetters: List<Char>,
     searchQuery: String,
     showAppIcons: Boolean,
-    autoLaunchSingleMatch: Boolean,
+    openKeyboardOnOpen: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onClearSearch: () -> Unit,
-    onToggleAutoLaunch: () -> Unit,
     onAppClick: (AppItem) -> Unit,
     onAppLongPress: (AppItem) -> Unit,
     onQuickTogglePin: (AppItem) -> Unit,
@@ -78,6 +79,14 @@ fun AppDrawerScreen(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
+    val searchFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        if (openKeyboardOnOpen) {
+            searchFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
 
     Box(
         modifier = modifier
@@ -163,6 +172,7 @@ fun AppDrawerScreen(
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .focusRequester(searchFocusRequester)
                                     .testTag("drawer_search_input")
                             )
                         }
@@ -179,42 +189,6 @@ fun AppDrawerScreen(
                                     .testTag("clear_search_button")
                             )
                         }
-                    }
-                }
-
-                // Auto-launch single match toggle pill
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = if (autoLaunchSingleMatch) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    },
-                    contentColor = if (autoLaunchSingleMatch) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable(onClick = onToggleAutoLaunch)
-                        .testTag("auto_launch_toggle")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Bolt,
-                            contentDescription = stringResource(R.string.toggle_auto_launch_cd),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = stringResource(R.string.auto_launch_label),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium
-                        )
                     }
                 }
             }

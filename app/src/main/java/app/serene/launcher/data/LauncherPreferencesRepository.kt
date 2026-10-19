@@ -6,8 +6,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import app.serene.launcher.model.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -20,9 +22,10 @@ private val Context.launcherDataStore: DataStore<Preferences> by preferencesData
 data class LauncherUserPreferences(
     val pinnedAppIds: Set<String> = emptySet(),
     val hasInitializedDefaultPins: Boolean = false,
-    val isDarkTheme: Boolean = false,       // Warm paper light mode by default
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val showAppIcons: Boolean = false,      // Pure text by default
-    val autoLaunchSingleMatch: Boolean = true
+    val autoLaunchSingleMatch: Boolean = true,
+    val openKeyboardOnDrawer: Boolean = false
 )
 
 class LauncherPreferencesRepository(
@@ -33,7 +36,10 @@ class LauncherPreferencesRepository(
     companion object {
         val KEY_PINNED_APP_IDS = stringSetPreferencesKey("pinned_app_ids")
         val KEY_HAS_INITIALIZED_DEFAULT_PINS = booleanPreferencesKey("has_initialized_default_pins")
+        /** Pre-Settings light/dark switch, still read so older installs keep their theme. */
         val KEY_IS_DARK_THEME = booleanPreferencesKey("is_dark_theme")
+        val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
+        val KEY_OPEN_KEYBOARD_ON_DRAWER = booleanPreferencesKey("open_keyboard_on_drawer")
         val KEY_SHOW_APP_ICONS = booleanPreferencesKey("show_app_icons")
         val KEY_AUTO_LAUNCH_SINGLE = booleanPreferencesKey("auto_launch_single_match")
     }
@@ -50,9 +56,10 @@ class LauncherPreferencesRepository(
             LauncherUserPreferences(
                 pinnedAppIds = prefs[KEY_PINNED_APP_IDS] ?: emptySet(),
                 hasInitializedDefaultPins = prefs[KEY_HAS_INITIALIZED_DEFAULT_PINS] ?: false,
-                isDarkTheme = prefs[KEY_IS_DARK_THEME] ?: false,
+                themeMode = ThemeMode.fromStored(prefs[KEY_THEME_MODE], prefs[KEY_IS_DARK_THEME]),
                 showAppIcons = prefs[KEY_SHOW_APP_ICONS] ?: false,
-                autoLaunchSingleMatch = prefs[KEY_AUTO_LAUNCH_SINGLE] ?: true
+                autoLaunchSingleMatch = prefs[KEY_AUTO_LAUNCH_SINGLE] ?: true,
+                openKeyboardOnDrawer = prefs[KEY_OPEN_KEYBOARD_ON_DRAWER] ?: false
             )
         }
 
@@ -91,9 +98,9 @@ class LauncherPreferencesRepository(
         }
     }
 
-    suspend fun setDarkTheme(isDark: Boolean) {
+    suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { prefs ->
-            prefs[KEY_IS_DARK_THEME] = isDark
+            prefs[KEY_THEME_MODE] = mode.name
         }
     }
 
@@ -106,6 +113,12 @@ class LauncherPreferencesRepository(
     suspend fun setAutoLaunchSingleMatch(autoLaunch: Boolean) {
         dataStore.edit { prefs ->
             prefs[KEY_AUTO_LAUNCH_SINGLE] = autoLaunch
+        }
+    }
+
+    suspend fun setOpenKeyboardOnDrawer(open: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[KEY_OPEN_KEYBOARD_ON_DRAWER] = open
         }
     }
 }

@@ -14,6 +14,7 @@ import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.LauncherUiState
 import app.serene.launcher.model.StatusMessage
+import app.serene.launcher.model.ThemeMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,7 @@ class LauncherViewModel(
     private val _searchQuery = MutableStateFlow("")
     private val _isDrawerOpen = MutableStateFlow(false)
     private val _selectedAppForMenu = MutableStateFlow<AppItem?>(null)
+    private val _isSettingsOpen = MutableStateFlow(false)
     private val _statusMessage = MutableStateFlow<StatusMessage?>(null)
 
     private val _uiState = MutableStateFlow(LauncherUiState())
@@ -67,14 +69,17 @@ class LauncherViewModel(
                     statusMessage = _statusMessage.value
                 )
             }.combine(
-                combine(_selectedAppForMenu, _statusMessage) { selected, status -> selected to status }
-            ) { baseState, (selected, status) ->
+                combine(_selectedAppForMenu, _statusMessage, _isSettingsOpen) { selected, status, settingsOpen ->
+                    Triple(selected, status, settingsOpen)
+                }
+            ) { baseState, (selected, status, settingsOpen) ->
                 val updatedSelected = selected?.let { sel ->
                     baseState.allApps.find { it.id == sel.id } ?: sel
                 }
                 baseState.copy(
                     selectedAppForMenu = updatedSelected,
-                    statusMessage = status
+                    statusMessage = status,
+                    isSettingsOpen = settingsOpen
                 )
             }.collect { state ->
                 _uiState.value = state
@@ -108,9 +113,10 @@ class LauncherViewModel(
             availableLetters = AppSearch.railLetters,
             searchQuery = query,
             isDrawerOpen = isDrawerOpen,
-            isDarkTheme = prefs.isDarkTheme,
+            themeMode = prefs.themeMode,
             showAppIcons = prefs.showAppIcons,
             autoLaunchSingleMatch = prefs.autoLaunchSingleMatch,
+            openKeyboardOnDrawer = prefs.openKeyboardOnDrawer,
             selectedAppForMenu = selectedApp,
             statusMessage = statusMessage
         )
@@ -209,30 +215,29 @@ class LauncherViewModel(
             .onFailure { showTransientMessage(StatusMessage(R.string.status_cant_show_app_info, listOf(app.label))) }
     }
 
-    fun toggleTheme() {
-        viewModelScope.launch {
-            val nextDark = !_uiState.value.isDarkTheme
-            preferencesRepository.setDarkTheme(nextDark)
-            showTransientMessage(StatusMessage(if (nextDark) R.string.status_dark_theme else R.string.status_light_theme))
-        }
+    fun openSettings() {
+        _selectedAppForMenu.value = null
+        _isSettingsOpen.value = true
     }
 
-    fun toggleShowAppIcons() {
-        viewModelScope.launch {
-            val nextIcons = !_uiState.value.showAppIcons
-            preferencesRepository.setShowAppIcons(nextIcons)
-            showTransientMessage(StatusMessage(if (nextIcons) R.string.status_icons_on else R.string.status_icons_off))
-        }
+    fun closeSettings() {
+        _isSettingsOpen.value = false
     }
 
-    fun toggleAutoLaunchSingleMatch() {
-        viewModelScope.launch {
-            val nextAuto = !_uiState.value.autoLaunchSingleMatch
-            preferencesRepository.setAutoLaunchSingleMatch(nextAuto)
-            showTransientMessage(
-                StatusMessage(if (nextAuto) R.string.status_auto_open_on else R.string.status_auto_open_off)
-            )
-        }
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { preferencesRepository.setThemeMode(mode) }
+    }
+
+    fun setShowAppIcons(show: Boolean) {
+        viewModelScope.launch { preferencesRepository.setShowAppIcons(show) }
+    }
+
+    fun setAutoLaunchSingleMatch(autoLaunch: Boolean) {
+        viewModelScope.launch { preferencesRepository.setAutoLaunchSingleMatch(autoLaunch) }
+    }
+
+    fun setOpenKeyboardOnDrawer(open: Boolean) {
+        viewModelScope.launch { preferencesRepository.setOpenKeyboardOnDrawer(open) }
     }
 
     fun clearStatusMessage() {

@@ -18,6 +18,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,7 +40,9 @@ import app.serene.launcher.ui.components.AppContextActionSheet
 import app.serene.launcher.ui.components.LocalAppIconLoader
 import app.serene.launcher.ui.components.TransientStatusPill
 import app.serene.launcher.ui.screens.AppDrawerScreen
+import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.ui.screens.HomeScreen
+import app.serene.launcher.ui.screens.SettingsScreen
 import app.serene.launcher.ui.theme.SereneLauncherTheme
 import app.serene.launcher.viewmodel.LauncherViewModel
 
@@ -55,7 +58,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-            SereneLauncherTheme(darkTheme = uiState.isDarkTheme) {
+            val darkTheme = when (uiState.themeMode) {
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+            }
+
+            SereneLauncherTheme(darkTheme = darkTheme) {
                 CompositionLocalProvider(LocalAppIconLoader provides AppIconLoader.get(this)) {
                     SereneLauncherRoot(
                         viewModel = viewModel
@@ -70,6 +79,7 @@ class MainActivity : ComponentActivity() {
         // Pressing the system Home button while already in the launcher returns cleanly to Home
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
             viewModel.closeDrawer()
+            viewModel.closeSettings()
             viewModel.dismissAppMenu()
         }
     }
@@ -94,9 +104,13 @@ fun SereneLauncherRoot(
                 .padding(innerPadding)
         ) {
             AnimatedContent(
-                targetState = uiState.isDrawerOpen,
+                targetState = when {
+                    uiState.isSettingsOpen -> LauncherScreen.SETTINGS
+                    uiState.isDrawerOpen -> LauncherScreen.DRAWER
+                    else -> LauncherScreen.HOME
+                },
                 transitionSpec = {
-                    if (targetState) {
+                    if (targetState != LauncherScreen.HOME) {
                         // Opening App Drawer: slide up gently + fade in
                         (slideInVertically(
                             animationSpec = spring(
@@ -121,34 +135,41 @@ fun SereneLauncherRoot(
                     }
                 },
                 label = "LauncherScreenTransition"
-            ) { isDrawerOpen ->
-                if (isDrawerOpen) {
-                    AppDrawerScreen(
+            ) { screen ->
+                when (screen) {
+                    LauncherScreen.SETTINGS -> SettingsScreen(
+                        themeMode = uiState.themeMode,
+                        showAppIcons = uiState.showAppIcons,
+                        autoLaunchSingleMatch = uiState.autoLaunchSingleMatch,
+                        openKeyboardOnDrawer = uiState.openKeyboardOnDrawer,
+                        onThemeModeChange = viewModel::setThemeMode,
+                        onShowAppIconsChange = viewModel::setShowAppIcons,
+                        onAutoLaunchSingleMatchChange = viewModel::setAutoLaunchSingleMatch,
+                        onOpenKeyboardOnDrawerChange = viewModel::setOpenKeyboardOnDrawer,
+                        onClose = viewModel::closeSettings
+                    )
+                    LauncherScreen.DRAWER -> AppDrawerScreen(
                         apps = uiState.filteredDrawerApps,
                         alphabetIndexMap = uiState.alphabetIndexMap,
                         availableLetters = uiState.availableLetters,
                         searchQuery = uiState.searchQuery,
                         showAppIcons = uiState.showAppIcons,
-                        autoLaunchSingleMatch = uiState.autoLaunchSingleMatch,
+                        openKeyboardOnOpen = uiState.openKeyboardOnDrawer,
                         onSearchQueryChange = viewModel::onSearchQueryChanged,
                         onClearSearch = viewModel::clearSearch,
-                        onToggleAutoLaunch = viewModel::toggleAutoLaunchSingleMatch,
                         onAppClick = viewModel::launchApp,
                         onAppLongPress = viewModel::onAppLongPress,
                         onQuickTogglePin = viewModel::togglePin,
                         onCloseDrawer = viewModel::closeDrawer
                     )
-                } else {
-                    HomeScreen(
+                    LauncherScreen.HOME -> HomeScreen(
                         pinnedApps = uiState.pinnedApps,
                         totalInstalledCount = uiState.allApps.size,
-                        isDarkTheme = uiState.isDarkTheme,
                         showAppIcons = uiState.showAppIcons,
                         onAppClick = viewModel::launchApp,
                         onAppLongPress = viewModel::onAppLongPress,
                         onOpenDrawer = viewModel::openDrawer,
-                        onToggleTheme = viewModel::toggleTheme,
-                        onToggleIcons = viewModel::toggleShowAppIcons,
+                        onOpenSettings = viewModel::openSettings,
                         onClockClick = {
                             context.openSystemScreen(Intent(AlarmClock.ACTION_SHOW_ALARMS)) {
                                 viewModel.onSystemScreenUnavailable(R.string.status_cant_open_alarms)
@@ -189,6 +210,9 @@ fun SereneLauncherRoot(
         }
     }
 }
+
+/** Which full screen the launcher is showing. */
+private enum class LauncherScreen { HOME, DRAWER, SETTINGS }
 
 /** Starts [intent], or calls [onUnavailable] if no app on the phone handles it. */
 private fun Context.openSystemScreen(intent: Intent, onUnavailable: () -> Unit) {
