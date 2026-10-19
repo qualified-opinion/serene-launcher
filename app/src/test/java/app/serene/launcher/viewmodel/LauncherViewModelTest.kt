@@ -1,6 +1,8 @@
 package app.serene.launcher.viewmodel
 
+import app.serene.launcher.R
 import app.serene.launcher.data.LauncherPreferencesRepository
+import app.serene.launcher.model.StatusMessage
 import app.serene.launcher.testing.FakeAppsRepository
 import app.serene.launcher.testing.InMemoryPreferencesDataStore
 import app.serene.launcher.testing.app
@@ -147,7 +149,10 @@ class LauncherViewModelTest {
         runCurrent()
 
         assertTrue(viewModel.uiState.value.isDrawerOpen)
-        assertEquals("Can't open Camera", viewModel.uiState.value.statusMessage)
+        assertEquals(
+            StatusMessage(R.string.status_cant_open, listOf("Camera")),
+            viewModel.uiState.value.statusMessage
+        )
     }
 
     @Test

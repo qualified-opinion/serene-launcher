@@ -1,5 +1,6 @@
 package app.serene.launcher.model
 
+import androidx.annotation.StringRes
 import app.serene.launcher.domain.AppSearch
 
 enum class FallbackIconGlyph {
@@ -50,5 +51,11 @@ data class LauncherUiState(
     val showAppIcons: Boolean = false,
     val autoLaunchSingleMatch: Boolean = true,
     val selectedAppForMenu: AppItem? = null,
-    val statusMessage: String? = null
+    val statusMessage: StatusMessage? = null
 )
+
+/**
+ * A short confirmation shown in the status pill, kept as a string resource and its arguments so
+ * the ViewModel needs no Context and the text follows the phone's language.
+ */
+data class StatusMessage(@StringRes val resId: Int, val args: List<Any> = emptyList())

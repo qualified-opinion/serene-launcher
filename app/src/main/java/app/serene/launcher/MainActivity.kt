@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.serene.launcher.data.AppIconLoader
@@ -150,7 +151,7 @@ fun SereneLauncherRoot(
                         onToggleIcons = viewModel::toggleShowAppIcons,
                         onClockClick = {
                             context.openSystemScreen(Intent(AlarmClock.ACTION_SHOW_ALARMS)) {
-                                viewModel.onSystemScreenUnavailable("alarms")
+                                viewModel.onSystemScreenUnavailable(R.string.status_cant_open_alarms)
                             }
                         },
                         onDateClick = {
@@ -159,7 +160,7 @@ fun SereneLauncherRoot(
                                 .appendPath(System.currentTimeMillis().toString())
                                 .build()
                             context.openSystemScreen(Intent(Intent.ACTION_VIEW, today)) {
-                                viewModel.onSystemScreenUnavailable("calendar")
+                                viewModel.onSystemScreenUnavailable(R.string.status_cant_open_calendar)
                             }
                         }
                     )
@@ -168,7 +169,7 @@ fun SereneLauncherRoot(
 
             // Transient confirmation pill (e.g. "Pinned Calculator to Home")
             TransientStatusPill(
-                message = uiState.statusMessage,
+                message = uiState.statusMessage?.let { stringResource(it.resId, *it.args.toTypedArray()) },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 84.dp)

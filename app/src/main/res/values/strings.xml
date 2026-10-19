@@ -23,4 +23,35 @@
     <string name="work_profile_label">Work</string>
     <string name="open_alarms_action">Open alarms</string>
     <string name="open_calendar_action">Open calendar</string>
+
+    <!-- Home -->
+    <plurals name="all_apps_count">
+        <item quantity="one">All apps (%1$d)</item>
+        <item quantity="other">All apps (%1$d)</item>
+    </plurals>
+
+    <!-- App action sheet -->
+    <string name="sheet_state_pinned">Pinned to home screen</string>
+    <string name="sheet_state_in_drawer">In app drawer</string>
+    <string name="sheet_open_app">Open %1$s</string>
+
+    <!-- TalkBack actions and descriptions -->
+    <string name="open_app_action">Open</string>
+    <string name="app_options_action">Show options</string>
+
+    <!-- Status messages -->
+    <string name="status_opening">Opening %1$s</string>
+    <string name="status_auto_opened">Auto-opened %1$s</string>
+    <string name="status_cant_open">Can\'t open %1$s</string>
+    <string name="status_cant_show_app_info">Can\'t show app info for %1$s</string>
+    <string name="status_cant_open_alarms">Can\'t open alarms</string>
+    <string name="status_cant_open_calendar">Can\'t open calendar</string>
+    <string name="status_pinned">Pinned %1$s to Home</string>
+    <string name="status_unpinned">Unpinned %1$s from Home</string>
+    <string name="status_dark_theme">Dark theme on</string>
+    <string name="status_light_theme">Warm paper theme on</string>
+    <string name="status_icons_on">Small monochrome icons on</string>
+    <string name="status_icons_off">Pure text mode on</string>
+    <string name="status_auto_open_on">Auto-open single search match on</string>
+    <string name="status_auto_open_off">Auto-open single search match off</string>
 </resources>

@@ -81,6 +81,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -89,7 +95,6 @@ import app.serene.launcher.R
 import app.serene.launcher.data.AppIconLoader
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.FallbackIconGlyph
-import java.util.Locale
 
 @Composable
 fun MinimalClockDateHeader(
@@ -244,13 +249,15 @@ fun PinnedAppRow(
     modifier: Modifier = Modifier
 ) {
     val haptics = LocalHapticFeedback.current
-    val tagSafeName = app.label.lowercase(Locale.getDefault()).replace(" ", "_")
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .combinedClickable(
+                role = Role.Button,
+                onClickLabel = stringResource(R.string.open_app_action),
+                onLongClickLabel = stringResource(R.string.app_options_action),
                 onClick = onClick,
                 onLongClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -258,7 +265,7 @@ fun PinnedAppRow(
                 }
             )
             .padding(vertical = 13.dp, horizontal = 8.dp)
-            .testTag("pinned_app_row_$tagSafeName"),
+            .testTag("pinned_app_row_${app.id}"),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AnimatedVisibility(visible = showIcon) {
@@ -305,21 +312,25 @@ fun DrawerAppRow(
     modifier: Modifier = Modifier
 ) {
     val haptics = LocalHapticFeedback.current
-    val tagSafeName = app.label.lowercase(Locale.getDefault()).replace(" ", "_")
+    val pinnedState = stringResource(R.string.pinned_badge)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .combinedClickable(
+                role = Role.Button,
+                onClickLabel = stringResource(R.string.open_app_action),
+                onLongClickLabel = stringResource(R.string.app_options_action),
                 onClick = onClick,
                 onLongClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     onLongClick()
                 }
             )
+            .semantics { if (app.isPinned) stateDescription = pinnedState }
             .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)
-            .testTag("drawer_app_row_$tagSafeName"),
+            .testTag("drawer_app_row_${app.id}"),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -354,7 +365,7 @@ fun DrawerAppRow(
                         .size(6.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
-                        .testTag("pinned_dot_$tagSafeName")
+                        .testTag("pinned_dot_${app.id}")
                 )
             }
         }
@@ -366,7 +377,7 @@ fun DrawerAppRow(
             },
             modifier = Modifier
                 .size(48.dp)
-                .testTag("quick_pin_button_$tagSafeName")
+                .testTag("quick_pin_button_${app.id}")
         ) {
             Icon(
                 imageVector = if (app.isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
@@ -475,6 +486,8 @@ fun AlphabetIndexSidebar(
                         }
                     )
                 }
+                // A touch shortcut only: TalkBack users move through the list itself instead.
+                .clearAndSetSemantics {}
                 .testTag("alphabet_sidebar"),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
@@ -535,7 +548,7 @@ fun AppContextActionSheet(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = if (app.isPinned) "Pinned to home screen" else "In app drawer",
+                        text = stringResource(if (app.isPinned) R.string.sheet_state_pinned else R.string.sheet_state_in_drawer),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -593,7 +606,7 @@ fun AppContextActionSheet(
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = "Open ${app.label}",
+                    text = stringResource(R.string.sheet_open_app, app.label),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -649,6 +662,7 @@ fun TransientStatusPill(
                     color = MaterialTheme.colorScheme.outlineVariant,
                     shape = CircleShape
                 )
+                .semantics { liveRegion = LiveRegionMode.Polite }
                 .testTag("status_feedback_pill")
         ) {
             Row(
