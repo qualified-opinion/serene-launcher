@@ -12,8 +12,8 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | #18 Settings | `feat/settings-screen` | Settings screen, follow-system theme | Merged #29, `82082df` | - |
 | B0 Docs | `docs/plan-roadmap` | This roadmap, review, packs, AGENTS.md, CLAUDE.md | Merged #30, `662a7cd` | - |
 | B1 Hardening | `fix/settings-hardening` | N-01, N-02, N-03, N-07, B15 | Merged #31, `6b4cd9f` | [batch1](handoffs/batch1-settings-hardening.md) |
-| B2 Ordered pins | `feat/ordered-pins` | #19 part 1 (B11, N-15) | In review | [batch2](handoffs/batch2-ordered-pins.md) |
-| B3 Backup policy | `fix/backup-policy` | N-04, #23 shrunk | Outline | - |
+| B2 Ordered pins | `feat/ordered-pins` | #19 part 1 (B11, N-15) | Merged #32, `e70d64f` | [batch2](handoffs/batch2-ordered-pins.md) |
+| B3 Backup policy | `fix/backup-policy` | N-04, #23 shrunk | In review | [batch3](handoffs/batch3-backup-policy.md) |
 | B4 Hide apps | `feat/hide-apps` | #19 part 2, hide only | Outline | - |
 | B5 Release | `ci/release-workflow` | #24 | Outline | - |
 | B6 Publish | `docs/publish` | #25, needs the licence decision | Outline | - |
@@ -40,10 +40,11 @@ Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review
 | N-12 | Low | The release build isn't shrunk and ships the full extended icon library | B5 |
 | N-13 | Low | A unit test writes the real settings file and never cleans up | B1 |
 | N-15 | Low | A pin disappears from Home when an app renames its activity, but stays stored | B2 (skip, don't delete) |
+| N-16 | Low | Work-profile pins transferred to a new phone may stay saved but hidden because profile serials can differ | Later |
 
 ## Decisions Jan still owes
 1. **Licence, MIT or GPL-3.0.** It's needed for B6. Default: none is added until Jan picks.
-2. **Android cloud backup, on or off.** Default for B3: off (`allowBackup="false"`), which matches the offline promise. The in-app backup file in #23 stays later.
+2. **Android cloud backup, on or off.** Resolved: off. Device-to-device transfer kept. Jan confirmed 2026-10-22 (`allowBackup="false"`), which matches the offline promise. The in-app backup file in #23 stays later.
 3. **Order: hardening first, then pins.** Resolved: Jan confirmed hardening first, 2026-10-22.
 
 ## Cut for the first public release (later ideas)
