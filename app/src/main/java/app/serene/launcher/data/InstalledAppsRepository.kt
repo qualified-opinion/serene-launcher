@@ -62,26 +62,27 @@ class InstalledAppsRepository(
             .let { AppSearch.sort(it) }
     }
 
-    override fun appChanges(): Flow<Unit> = callbackFlow {
+    override fun appChanges(): Flow<AppChange> = callbackFlow {
         val callback = object : LauncherApps.Callback() {
             override fun onPackageRemoved(packageName: String, user: UserHandle) {
-                trySend(Unit)
+                val serial = if (user == Process.myUserHandle()) null else userManager.getSerialNumberForUser(user)
+                trySend(AppChange.Removed(packageName, serial))
             }
 
             override fun onPackageAdded(packageName: String, user: UserHandle) {
-                trySend(Unit)
+                trySend(AppChange.Refresh)
             }
 
             override fun onPackageChanged(packageName: String, user: UserHandle) {
-                trySend(Unit)
+                trySend(AppChange.Refresh)
             }
 
             override fun onPackagesAvailable(packageNames: Array<out String>, user: UserHandle, replacing: Boolean) {
-                trySend(Unit)
+                trySend(AppChange.Refresh)
             }
 
             override fun onPackagesUnavailable(packageNames: Array<out String>, user: UserHandle, replacing: Boolean) {
-                trySend(Unit)
+                trySend(AppChange.Refresh)
             }
         }
         launcherApps.registerCallback(callback, Handler(Looper.getMainLooper()))

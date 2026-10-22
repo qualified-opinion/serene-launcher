@@ -78,6 +78,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         // Pressing the system Home button while already in the launcher returns cleanly to Home
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            viewModel.finishReorderingPins()
             viewModel.closeDrawer()
             viewModel.closeSettings()
             viewModel.dismissAppMenu()
@@ -165,6 +166,9 @@ fun SereneLauncherRoot(
                     )
                     LauncherScreen.HOME -> HomeScreen(
                         pinnedApps = uiState.pinnedApps,
+                        isReorderingPins = uiState.isReorderingPins,
+                        onMovePin = viewModel::movePin,
+                        onDoneReordering = viewModel::finishReorderingPins,
                         isLoading = uiState.isLoading,
                         totalInstalledCount = uiState.allApps.size,
                         showAppIcons = uiState.showAppIcons,
@@ -206,7 +210,8 @@ fun SereneLauncherRoot(
                     onDismiss = viewModel::dismissAppMenu,
                     onTogglePin = { viewModel.togglePin(selectedApp) },
                     onOpenApp = { viewModel.launchApp(selectedApp) },
-                    onAppInfo = { viewModel.openAppInfo(selectedApp) }
+                    onAppInfo = { viewModel.openAppInfo(selectedApp) },
+                    onReorderPins = viewModel::startReorderingPins
                 )
             }
         }
