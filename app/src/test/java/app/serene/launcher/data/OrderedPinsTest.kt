@@ -39,6 +39,51 @@ class OrderedPinsTest {
     }
 
     @Test
+    fun `pruning legacy pins updates only the set and leaves the order key absent`() = runTest {
+        val store = InMemoryPreferencesDataStore()
+        val kept = setOf("pkgx/Main", "pkg/Main@1", "other/Main")
+        store.edit { it[KEY_PINNED_APP_IDS] = kept + "pkg/Main" }
+        val repo = LauncherPreferencesRepository(store)
+
+        repo.prunePins("pkg", null, emptyList())
+
+        val raw = store.data.first()
+        assertEquals(kept, raw[KEY_PINNED_APP_IDS])
+        assertNull(raw[KEY_PINNED_APP_ORDER])
+        assertEquals(setOf(KEY_PINNED_APP_IDS), raw.asMap().keys)
+    }
+
+    @Test
+    fun `pruning a package preserves pins for a package with the same prefix`() = runTest {
+        val store = InMemoryPreferencesDataStore()
+        val repo = LauncherPreferencesRepository(store)
+        val ids = listOf("pkg/Main", "pkg/Other", "pkgx/Main", "pkg/Main@1", "pkgx/Main@1")
+        repo.initializeDefaultPinsIfNeeded(ids.toSet())
+
+        repo.prunePins("pkg", null, emptyList())
+
+        val kept = ids.drop(2)
+        assertEquals(kept.toSet(), store.data.first()[KEY_PINNED_APP_IDS])
+        assertEquals(kept.joinToString("\n"), store.data.first()[KEY_PINNED_APP_ORDER])
+    }
+
+    @Test
+    fun `pruning profiles 1 and 11 preserves the other profile and similar packages`() = runTest {
+        for ((removed, retained) in listOf(1L to 11L, 11L to 1L)) {
+            val store = InMemoryPreferencesDataStore()
+            val repo = LauncherPreferencesRepository(store)
+            val ids = listOf("pkg/Main@$removed", "pkg/Main@$retained", "pkg/Main", "pkgx/Main@$removed")
+            repo.initializeDefaultPinsIfNeeded(ids.toSet())
+
+            repo.prunePins("pkg", removed, emptyList())
+
+            val kept = ids.drop(1)
+            assertEquals(kept.toSet(), store.data.first()[KEY_PINNED_APP_IDS])
+            assertEquals(kept.joinToString("\n"), store.data.first()[KEY_PINNED_APP_ORDER])
+        }
+    }
+
+    @Test
     fun `a move persists across reopening and preserves work and nested activity ids`() = runTest {
         val file = folder.newFile("pins.preferences_pb")
         val job = Job(backgroundScope.coroutineContext[Job])

@@ -214,6 +214,24 @@ class LauncherViewModelTest {
     }
 
     @Test
+    fun `launching a pinned app exits reorder mode`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        try {
+            viewModel.startReorderingPins()
+            runCurrent()
+            assertTrue(viewModel.uiState.value.isReorderingPins)
+
+            viewModel.launchApp(viewModel.uiState.value.pinnedApps.single())
+            runCurrent()
+
+            assertEquals(listOf(maps.id), appsRepository.launched.map { it.id })
+            assertFalse(viewModel.uiState.value.isReorderingPins)
+        } finally {
+            viewModel.viewModelScope.cancel()
+        }
+    }
+
+    @Test
     fun `typing filters the drawer`() = runTest(dispatcher) {
         val viewModel = loadedViewModel()
         viewModel.setAutoLaunchSingleMatch(false) // so typing only filters

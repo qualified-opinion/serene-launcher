@@ -193,6 +193,7 @@ class LauncherViewModel(
     }
 
     fun launchApp(app: AppItem) {
+        finishReorderingPins()
         _selectedAppForMenu.value = null
         installedAppsRepository.launchApp(app)
             .onSuccess {

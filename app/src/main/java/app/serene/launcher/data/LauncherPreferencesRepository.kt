@@ -166,7 +166,13 @@ class LauncherPreferencesRepository(
                 id.substringBefore('/') == packageName &&
                     (if (profileSerial == null) '@' !in id else id.endsWith("@$profileSerial"))
             }
-            if (kept != order) prefs.writePins(kept)
+            if (kept != order) {
+                if (prefs[KEY_PINNED_APP_ORDER] == null) {
+                    prefs[KEY_PINNED_APP_IDS] = kept.toSet()
+                } else {
+                    prefs.writePins(kept)
+                }
+            }
         }
     }
 
