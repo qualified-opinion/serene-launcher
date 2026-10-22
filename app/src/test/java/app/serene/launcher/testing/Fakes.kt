@@ -3,11 +3,12 @@ package app.serene.launcher.testing
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
+import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.AppsRepository
 import app.serene.launcher.model.AppItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -26,7 +27,8 @@ class FakeAppsRepository(
 
     override suspend fun loadInstalledApps(): List<AppItem> = apps
 
-    override fun appChanges(): Flow<Unit> = emptyFlow()
+    val changes = MutableSharedFlow<AppChange>()
+    override fun appChanges(): Flow<AppChange> = changes
 
     override fun selectInitialPinnedIds(allApps: List<AppItem>): Set<String> = initialPins
 

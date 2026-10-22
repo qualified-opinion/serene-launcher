@@ -21,14 +21,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -42,6 +45,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.serene.launcher.R
 import app.serene.launcher.model.AppItem
@@ -63,11 +68,14 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onClockClick: () -> Unit,
     onDateClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isReorderingPins: Boolean = false,
+    onMovePin: (AppItem, Int) -> Unit = { _, _ -> },
+    onDoneReordering: () -> Unit = {}
 ) {
     // Home is the bottom of the back stack: swallow Back so the system doesn't
     // finish the launcher and immediately restart it.
-    BackHandler {}
+    BackHandler { onDoneReordering() }
 
     var cumulativeUpwardDrag by remember { mutableFloatStateOf(0f) }
     val openDrawerThresholdPx = with(LocalDensity.current) { OpenDrawerSwipeThreshold.toPx() }
@@ -144,12 +152,26 @@ fun HomeScreen(
                             items = pinnedApps,
                             key = { it.id }
                         ) { app ->
-                            PinnedAppRow(
-                                app = app,
-                                showIcon = showAppIcons,
-                                onClick = { onAppClick(app) },
-                                onLongClick = { onAppLongPress(app) }
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                PinnedAppRow(
+                                    app = app, showIcon = showAppIcons,
+                                    onClick = { onAppClick(app) }, onLongClick = { onAppLongPress(app) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (isReorderingPins) {
+                                    listOf(-1, 1).forEach { offset ->
+                                        IconButton(
+                                            onClick = { onMovePin(app, offset) },
+                                            enabled = if (offset < 0) app != pinnedApps.first() else app != pinnedApps.last()
+                                        ) {
+                                            Icon(
+                                                if (offset < 0) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                                                stringResource(if (offset < 0) R.string.move_pin_up else R.string.move_pin_down, app.label)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -162,6 +184,12 @@ fun HomeScreen(
                     .padding(top = 12.dp, bottom = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                if (isReorderingPins) {
+                    val done = stringResource(R.string.reorder_done)
+                    TextButton(onClick = onDoneReordering, modifier = Modifier.semantics { contentDescription = done }) {
+                        Text(done)
+                    }
+                }
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surface,

@@ -20,6 +20,11 @@
     <string name="open_alarms_action">Open alarms</string>
     <string name="open_calendar_action">Open calendar</string>
 
+    <string name="reorder_pins">Reorder pins</string>
+    <string name="reorder_done">Done</string>
+    <string name="move_pin_up">Move %1$s up</string>
+    <string name="move_pin_down">Move %1$s down</string>
+
     <!-- Home -->
     <plurals name="all_apps_count">
         <item quantity="one">All apps (%1$d)</item>

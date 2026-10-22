@@ -1,19 +1,29 @@
 package app.serene.launcher.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextReplacement
+import androidx.lifecycle.viewModelScope
+import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.testing.FakeAppsRepository
+import app.serene.launcher.testing.InMemoryPreferencesDataStore
 import app.serene.launcher.testing.app
 import app.serene.launcher.ui.screens.AppDrawerScreen
 import app.serene.launcher.ui.screens.HomeScreen
 import app.serene.launcher.ui.theme.SereneLauncherTheme
+import app.serene.launcher.viewmodel.LauncherViewModel
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -71,6 +81,33 @@ class LoadingAndSearchTest {
         compose.onNodeWithTag("empty_search_state").assertDoesNotExist()
         compose.runOnIdle { loading = false }
         compose.onNodeWithTag("empty_search_state").assertIsDisplayed()
+    }
+
+    @Test
+    fun `down on the first pin swaps the first two pins in reorder mode`() {
+        val apps = listOf(app("Camera"), app("Maps"))
+        val repo = LauncherPreferencesRepository(InMemoryPreferencesDataStore())
+        runBlocking { repo.initializeDefaultPinsIfNeeded(apps.map { it.id }.toSet()) }
+        val vm = LauncherViewModel(FakeAppsRepository(apps), repo)
+        try {
+            vm.startReorderingPins()
+            compose.setContent {
+                val state by vm.uiState.collectAsState()
+                SereneLauncherTheme {
+                    HomeScreen(
+                        pinnedApps = state.pinnedApps, isLoading = state.isLoading, totalInstalledCount = 2,
+                        showAppIcons = false, onAppClick = {}, onAppLongPress = {}, onOpenDrawer = {},
+                        onOpenSettings = {}, onClockClick = {}, onDateClick = {},
+                        isReorderingPins = state.isReorderingPins, onMovePin = vm::movePin
+                    )
+                }
+            }
+            compose.onNodeWithContentDescription("Move Camera down").performClick()
+            compose.runOnIdle { assertEquals(apps.reversed().map { it.id }, vm.uiState.value.pinnedApps.map { it.id }) }
+            assertTrue(compose.onNodeWithTag("pinned_app_row_${apps[1].id}").fetchSemanticsNode().boundsInRoot.top <
+                compose.onNodeWithTag("pinned_app_row_${apps[0].id}").fetchSemanticsNode().boundsInRoot.top)
+            assertEquals(apps.reversed().map { it.id }, runBlocking { repo.preferencesFlow.first().pinnedAppOrder })
+        } finally { vm.viewModelScope.cancel() }
     }
 
     @Composable

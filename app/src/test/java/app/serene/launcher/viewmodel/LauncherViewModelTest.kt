@@ -2,8 +2,10 @@ package app.serene.launcher.viewmodel
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.viewModelScope
 import app.serene.launcher.R
+import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.model.StatusMessage
 import app.serene.launcher.model.ThemeMode
@@ -140,11 +142,75 @@ class LauncherViewModelTest {
 
         viewModel.togglePin(camera)
         advanceUntilIdle()
-        assertEquals(listOf(camera.id, maps.id), viewModel.uiState.value.pinnedApps.map { it.id })
+        assertEquals(listOf(maps.id, camera.id), viewModel.uiState.value.pinnedApps.map { it.id })
 
         viewModel.togglePin(camera)
         advanceUntilIdle()
         assertEquals(listOf(maps.id), viewModel.uiState.value.pinnedApps.map { it.id })
+    }
+
+    @Test
+    fun `starting with legacy pins keeps label order without writing the new key`() = runTest(dispatcher) {
+        val store = InMemoryPreferencesDataStore()
+        store.edit { it[LauncherPreferencesRepository.KEY_PINNED_APP_IDS] = setOf(maps.id, camera.id) }
+        preferences = LauncherPreferencesRepository(store)
+        val vm = loadedViewModel()
+        try {
+            assertEquals(listOf(camera.id, maps.id), vm.uiState.value.pinnedApps.map { it.id })
+            assertNull(store.data.first()[LauncherPreferencesRepository.KEY_PINNED_APP_ORDER])
+        } finally { vm.viewModelScope.cancel() }
+    }
+
+    @Test
+    fun `removed events prune only the named package and profile and save failures stay usable`() = runTest(dispatcher) {
+        val ids = listOf("pkg/Main", "pkg/Other", "pkg/Main@10", "pkg.extra/Main", "pkg/Main@11")
+        ids.forEach { preferences.setPinState(it, true) }
+        val viewModel = loadedViewModel()
+        try {
+            appsRepository.changes.emit(AppChange.Removed("pkg", null))
+            runCurrent()
+            assertEquals(ids.drop(2), preferences.preferencesFlow.first().pinnedAppOrder)
+            appsRepository.changes.emit(AppChange.Removed("pkg", 10))
+            runCurrent()
+            assertEquals(ids.drop(3), preferences.preferencesFlow.first().pinnedAppOrder)
+        } finally { viewModel.viewModelScope.cancel() }
+        val store = InMemoryPreferencesDataStore()
+        LauncherPreferencesRepository(store).setPinState(maps.id, true)
+        preferences = LauncherPreferencesRepository(object : DataStore<Preferences> by store {
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences = throw IOException()
+        })
+        val failing = loadedViewModel()
+        try {
+            appsRepository.changes.emit(AppChange.Removed(maps.packageName, null))
+            runCurrent()
+            assertEquals(listOf(maps.id), failing.uiState.value.pinnedApps.map { it.id })
+            assertFalse(failing.uiState.value.isLoading)
+        } finally { failing.viewModelScope.cancel() }
+    }
+
+    @Test
+    fun `restored pins survive empty and paused scans and appear in order when apps return`() = runTest(dispatcher) {
+        val work = app("Work", "pkg/Main@10").copy(profileSerial = 10, isWorkProfile = true)
+        val ordered = listOf(work, maps, camera)
+        ordered.forEach { preferences.setPinState(it.id, true) }
+        appsRepository.apps = emptyList()
+        val viewModel = loadedViewModel()
+        try {
+            assertTrue(viewModel.uiState.value.pinnedApps.isEmpty())
+            for (scan in listOf(listOf(camera, maps), emptyList(), listOf(camera, maps, work))) {
+                appsRepository.apps = scan
+                appsRepository.changes.emit(AppChange.Refresh)
+                runCurrent()
+                assertEquals(ordered.map { it.id }, preferences.preferencesFlow.first().pinnedAppOrder)
+                assertEquals(ordered.filter { it in scan }.map { it.id }, viewModel.uiState.value.pinnedApps.map { it.id })
+            }
+            viewModel.startReorderingPins()
+            runCurrent()
+            assertTrue(viewModel.uiState.value.isReorderingPins)
+            viewModel.finishReorderingPins()
+            runCurrent()
+            assertFalse(viewModel.uiState.value.isReorderingPins)
+        } finally { viewModel.viewModelScope.cancel() }
     }
 
     @Test

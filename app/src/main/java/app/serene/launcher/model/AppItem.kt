@@ -48,6 +48,7 @@ data class LauncherUiState(
     val searchQuery: String = "",
     val isDrawerOpen: Boolean = false,
     val isSettingsOpen: Boolean = false,
+    val isReorderingPins: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val showAppIcons: Boolean = false,
     val autoLaunchSingleMatch: Boolean = true,

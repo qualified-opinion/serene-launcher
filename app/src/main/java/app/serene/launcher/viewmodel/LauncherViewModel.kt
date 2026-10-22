@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import app.serene.launcher.R
+import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.AppsRepository
 import app.serene.launcher.data.InstalledAppsRepository
 import app.serene.launcher.data.LauncherPreferencesRepository
@@ -35,6 +36,7 @@ class LauncherViewModel(
     private val _searchQuery = MutableStateFlow("")
     private val _isDrawerOpen = MutableStateFlow(false)
     private val _selectedAppForMenu = MutableStateFlow<AppItem?>(null)
+    private val _isReordering = MutableStateFlow(false)
     private val _isSettingsOpen = MutableStateFlow(false)
     private val _statusMessage = MutableStateFlow<StatusMessage?>(null)
 
@@ -48,7 +50,12 @@ class LauncherViewModel(
         observeState()
         refreshInstalledApps()
         viewModelScope.launch {
-            installedAppsRepository.appChanges().collect { refreshInstalledApps() }
+            installedAppsRepository.appChanges().collect { change ->
+                if (change is AppChange.Removed) savePreferences {
+                    preferencesRepository.prunePins(change.packageName, change.profileSerial, _rawInstalledApps.value)
+                }
+                refreshInstalledApps()
+            }
         }
     }
 
@@ -57,7 +64,7 @@ class LauncherViewModel(
             combine(
                 _rawInstalledApps,
                 _isLoadingApps,
-                preferencesRepository.preferencesFlow,
+                preferencesRepository.preferencesFlow(_rawInstalledApps),
                 _searchQuery,
                 _isDrawerOpen
             ) { rawApps, isLoading, prefs, query, drawerOpen ->
@@ -83,6 +90,8 @@ class LauncherViewModel(
                     statusMessage = status,
                     isSettingsOpen = settingsOpen
                 )
+            }.combine(_isReordering) { state, reordering ->
+                state.copy(isReorderingPins = reordering)
             }.collect { state ->
                 _uiState.value = state
             }
@@ -102,7 +111,8 @@ class LauncherViewModel(
             app.copy(isPinned = prefs.pinnedAppIds.contains(app.id))
         }
 
-        val pinnedApps = allAppsWithPin.filter { it.isPinned }
+        val appsById = allAppsWithPin.associateBy { it.id }
+        val pinnedApps = prefs.pinnedAppOrder.mapNotNull { appsById[it] }
         val filteredDrawerApps = AppSearch.filter(allAppsWithPin, query)
         val alphabetMap = AppSearch.alphabetIndex(filteredDrawerApps)
 
@@ -143,6 +153,7 @@ class LauncherViewModel(
     }
 
     fun openDrawer() {
+        finishReorderingPins()
         _searchQuery.value = ""
         _isDrawerOpen.value = true
     }
@@ -206,11 +217,23 @@ class LauncherViewModel(
         _selectedAppForMenu.value = null
         viewModelScope.launch {
             savePreferences {
-                val isNowPinned = preferencesRepository.togglePinApp(app.id)
+                val isNowPinned = preferencesRepository.togglePinApp(app.id, _rawInstalledApps.value)
                 val messageRes = if (isNowPinned) R.string.status_pinned else R.string.status_unpinned
                 showTransientMessage(StatusMessage(messageRes, listOf(app.label)))
             }
         }
+    }
+
+    fun startReorderingPins() {
+        _selectedAppForMenu.value = null
+        closeDrawer()
+        _isReordering.value = true
+    }
+
+    fun finishReorderingPins() { _isReordering.value = false }
+
+    fun movePin(app: AppItem, offset: Int) {
+        viewModelScope.launch { savePreferences { preferencesRepository.movePin(app.id, offset, _rawInstalledApps.value) } }
     }
 
     private suspend fun savePreferences(save: suspend () -> Unit) {
@@ -235,6 +258,7 @@ class LauncherViewModel(
     }
 
     fun openSettings() {
+        finishReorderingPins()
         _selectedAppForMenu.value = null
         _isSettingsOpen.value = true
     }

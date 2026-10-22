@@ -54,6 +54,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -80,6 +81,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -488,7 +490,8 @@ fun AppContextActionSheet(
     onDismiss: () -> Unit,
     onTogglePin: () -> Unit,
     onOpenApp: () -> Unit,
-    onAppInfo: () -> Unit
+    onAppInfo: () -> Unit,
+    onReorderPins: () -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -555,6 +558,13 @@ fun AppContextActionSheet(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+            }
+
+            if (app.isPinned) {
+                val reorder = stringResource(R.string.reorder_pins)
+                TextButton(onClick = onReorderPins, modifier = Modifier.semantics { contentDescription = reorder }) {
+                    Text(reorder)
+                }
             }
 
             // Secondary action: Open App
