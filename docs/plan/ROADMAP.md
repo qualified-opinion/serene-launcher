@@ -11,7 +11,7 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | Phase 0–1 | various | B1–B10, B12–B16 (PR 1–9 of issue #27) | Merged #1, #2, #6, #12–#17 | - |
 | #18 Settings | `feat/settings-screen` | Settings screen, follow-system theme | Merged #29, `82082df` | - |
 | B0 Docs | `docs/plan-roadmap` | This roadmap, review, packs, AGENTS.md, CLAUDE.md | Merged #30, `662a7cd` | - |
-| B1 Hardening | `fix/settings-hardening` | N-01, N-02, N-03, N-07, B15 | In review | [batch1](handoffs/batch1-settings-hardening.md) |
+| B1 Hardening | `fix/settings-hardening` | N-01, N-02, N-03, N-07, B15 | Merged #31, `6b4cd9f` | [batch1](handoffs/batch1-settings-hardening.md) |
 | B2 Ordered pins | `feat/ordered-pins` | #19 part 1 (B11, N-15) | Outline | [batch2](handoffs/batch2-ordered-pins.md) |
 | B3 Backup policy | `fix/backup-policy` | N-04, #23 shrunk | Outline | - |
 | B4 Hide apps | `feat/hide-apps` | #19 part 2, hide only | Outline | - |
