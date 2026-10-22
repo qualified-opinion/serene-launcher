@@ -1,5 +1,8 @@
 package app.serene.launcher.viewmodel
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.lifecycle.viewModelScope
 import app.serene.launcher.R
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.model.StatusMessage
@@ -9,6 +12,8 @@ import app.serene.launcher.testing.InMemoryPreferencesDataStore
 import app.serene.launcher.testing.app
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -19,11 +24,18 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
 class LauncherViewModelTest {
 
     private val dispatcher = StandardTestDispatcher()
@@ -55,6 +67,71 @@ class LauncherViewModelTest {
         assertFalse(state.isLoading)
         assertEquals(listOf(calendar.id, camera.id, maps.id), state.allApps.map { it.id })
         assertEquals(listOf(maps.id), state.pinnedApps.map { it.id })
+    }
+
+    @Test
+    fun `empty scan retries default pins and initialized users are never reseeded`() = runTest(dispatcher) {
+        appsRepository.apps = emptyList()
+        val viewModel = LauncherViewModel(appsRepository, preferences)
+        try {
+            runCurrent()
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertFalse(preferences.preferencesFlow.first().hasInitializedDefaultPins)
+            assertTrue(preferences.preferencesFlow.first().pinnedAppIds.isEmpty())
+
+            appsRepository.apps = listOf(maps)
+            viewModel.refreshInstalledApps()
+            runCurrent()
+            assertTrue(preferences.preferencesFlow.first().hasInitializedDefaultPins)
+            assertEquals(setOf(maps.id), preferences.preferencesFlow.first().pinnedAppIds)
+            assertEquals(listOf(maps.id), viewModel.uiState.value.pinnedApps.map { it.id })
+
+            preferences.setPinState(maps.id, false)
+            viewModel.refreshInstalledApps()
+            runCurrent()
+            assertTrue(preferences.preferencesFlow.first().hasInitializedDefaultPins)
+            assertTrue(preferences.preferencesFlow.first().pinnedAppIds.isEmpty())
+            assertTrue(viewModel.uiState.value.pinnedApps.isEmpty())
+        } finally {
+            viewModel.viewModelScope.cancel()
+        }
+    }
+
+    @Test
+    fun `failed saves keep refresh and pinning usable and dismiss the menu`() = runTest(dispatcher) {
+        var writes = 0
+        val failingStore = object : DataStore<Preferences> by InMemoryPreferencesDataStore() {
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                writes++
+                throw IOException("write failed")
+            }
+        }
+        preferences = LauncherPreferencesRepository(failingStore)
+        val viewModel = LauncherViewModel(appsRepository, preferences)
+        try {
+            runCurrent()
+            assertEquals(1, writes)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertEquals(appsRepository.apps, viewModel.uiState.value.allApps)
+
+            viewModel.refreshInstalledApps()
+            runCurrent()
+            assertEquals(2, writes)
+            assertFalse(viewModel.uiState.value.isLoading)
+
+            viewModel.onAppLongPress(camera)
+            runCurrent()
+            assertEquals(camera, viewModel.uiState.value.selectedAppForMenu)
+            viewModel.togglePin(camera)
+            runCurrent()
+            assertEquals(3, writes)
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertNull(viewModel.uiState.value.selectedAppForMenu)
+            assertNull(viewModel.uiState.value.statusMessage)
+            assertTrue(viewModel.uiState.value.pinnedApps.isEmpty())
+        } finally {
+            viewModel.viewModelScope.cancel()
+        }
     }
 
     @Test
