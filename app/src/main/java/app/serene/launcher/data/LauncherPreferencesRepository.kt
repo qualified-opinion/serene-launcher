@@ -4,29 +4,45 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.preferencesDataStoreFile
 import app.serene.launcher.model.ThemeMode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
+import java.io.File
 import java.io.IOException
 
-internal val settingsCorruptionHandler = ReplaceFileCorruptionHandler<Preferences> {
-    Log.w("LauncherPreferences", "Damaged settings replaced with defaults")
-    emptyPreferences()
-}
-
-private val Context.launcherDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "serene_launcher_preferences",
-    corruptionHandler = settingsCorruptionHandler
+internal fun createLauncherPreferencesStore(
+    produceFile: () -> File,
+    scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+): DataStore<Preferences> = PreferenceDataStoreFactory.create(
+    corruptionHandler = ReplaceFileCorruptionHandler {
+        Log.w("LauncherPreferences", "Damaged settings replaced with defaults")
+        emptyPreferences()
+    },
+    scope = scope,
+    produceFile = produceFile
 )
+
+private object LauncherPreferencesStore {
+    private var store: DataStore<Preferences>? = null
+
+    @Synchronized
+    fun get(context: Context): DataStore<Preferences> = store ?: createLauncherPreferencesStore(
+        produceFile = { context.preferencesDataStoreFile("serene_launcher_preferences") }
+    ).also { store = it }
+}
 
 data class LauncherUserPreferences(
     val pinnedAppIds: Set<String> = emptySet(),
@@ -40,7 +56,7 @@ data class LauncherUserPreferences(
 class LauncherPreferencesRepository(
     private val dataStore: DataStore<Preferences>
 ) {
-    constructor(context: Context) : this(context.applicationContext.launcherDataStore)
+    constructor(context: Context) : this(LauncherPreferencesStore.get(context.applicationContext))
 
     companion object {
         val KEY_PINNED_APP_IDS = stringSetPreferencesKey("pinned_app_ids")

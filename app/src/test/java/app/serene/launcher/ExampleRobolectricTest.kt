@@ -11,6 +11,9 @@ import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.app
 import app.serene.launcher.testing.temporaryPreferences
 import app.serene.launcher.testing.temporaryPreferencesStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -102,12 +105,19 @@ class ExampleRobolectricTest {
     @Test
     fun `damaged settings load defaults and the next save succeeds`() = runTest {
         val file = temporaryFolder.newFile("damaged.preferences_pb").apply { writeText("broken settings") }
-        val repository = temporaryPreferences(file)
+        val storeJob = Job(backgroundScope.coroutineContext[Job])
+        val scope = CoroutineScope(backgroundScope.coroutineContext + storeJob)
+        val repository = LauncherPreferencesRepository(temporaryPreferencesStore(file, scope))
 
-        assertEquals(LauncherUserPreferences(), repository.preferencesFlow.first())
-        repository.setThemeMode(ThemeMode.DARK)
-        repository.setPinState("system/calculator", true)
-        val saved = repository.preferencesFlow.first()
+        try {
+            assertEquals(LauncherUserPreferences(), repository.preferencesFlow.first())
+            repository.setThemeMode(ThemeMode.DARK)
+            repository.setPinState("system/calculator", true)
+        } finally {
+            storeJob.cancelAndJoin()
+        }
+        // Reopen the same file so these assertions verify disk contents, not cached preferences.
+        val saved = temporaryPreferences(file).preferencesFlow.first()
         assertEquals(ThemeMode.DARK, saved.themeMode)
         assertEquals(setOf("system/calculator"), saved.pinnedAppIds)
     }

@@ -203,10 +203,10 @@ class LauncherViewModel(
     }
 
     fun togglePin(app: AppItem) {
+        _selectedAppForMenu.value = null
         viewModelScope.launch {
             savePreferences {
                 val isNowPinned = preferencesRepository.togglePinApp(app.id)
-                _selectedAppForMenu.value = null
                 val messageRes = if (isNowPinned) R.string.status_pinned else R.string.status_unpinned
                 showTransientMessage(StatusMessage(messageRes, listOf(app.label)))
             }
