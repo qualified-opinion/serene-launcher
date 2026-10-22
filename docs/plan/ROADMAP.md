@@ -11,7 +11,7 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | Phase 0–1 | various | B1–B10, B12–B16 (PR 1–9 of issue #27) | Merged #1, #2, #6, #12–#17 | - |
 | #18 Settings | `feat/settings-screen` | Settings screen, follow-system theme | Merged #29, `82082df` | - |
 | B0 Docs | `docs/plan-roadmap` | This roadmap, review, packs, AGENTS.md, CLAUDE.md | In review | - |
-| B1 Hardening | `fix/settings-hardening` | N-01, N-02, N-03, N-07, B15 | Pack ready | [batch1](handoffs/batch1-settings-hardening.md) |
+| B1 Hardening | `fix/settings-hardening` | N-01, N-02, N-03, N-07, B15 | In review | [batch1](handoffs/batch1-settings-hardening.md) |
 | B2 Ordered pins | `feat/ordered-pins` | #19 part 1 (B11, N-15) | Outline | [batch2](handoffs/batch2-ordered-pins.md) |
 | B3 Backup policy | `fix/backup-policy` | N-04, #23 shrunk | Outline | - |
 | B4 Hide apps | `feat/hide-apps` | #19 part 2, hide only | Outline | - |
@@ -44,7 +44,7 @@ Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review
 ## Decisions Jan still owes
 1. **Licence, MIT or GPL-3.0.** It's needed for B6. Default: none is added until Jan picks.
 2. **Android cloud backup, on or off.** Default for B3: off (`allowBackup="false"`), which matches the offline promise. The in-app backup file in #23 stays later.
-3. **Order: hardening first, then pins.** Kiln recommends it. Jan's 2026-10-22 go was given for "ordered pins first", so confirm.
+3. **Order: hardening first, then pins.** Resolved: Jan confirmed hardening first, 2026-10-22.
 
 ## Cut for the first public release (later ideas)
 #20 gestures, #21 wallpaper and Material You, #22 app shortcuts, #26 emulator UI tests, renaming apps (part of #19 part 2), a full in-app backup file (#23), and N-05, N-06, N-10, N-11. Revisit after v1.

@@ -150,6 +150,7 @@ fun SereneLauncherRoot(
                     )
                     LauncherScreen.DRAWER -> AppDrawerScreen(
                         apps = uiState.filteredDrawerApps,
+                        isLoading = uiState.isLoading,
                         alphabetIndexMap = uiState.alphabetIndexMap,
                         availableLetters = uiState.availableLetters,
                         searchQuery = uiState.searchQuery,
@@ -164,6 +165,7 @@ fun SereneLauncherRoot(
                     )
                     LauncherScreen.HOME -> HomeScreen(
                         pinnedApps = uiState.pinnedApps,
+                        isLoading = uiState.isLoading,
                         totalInstalledCount = uiState.allApps.size,
                         showAppIcons = uiState.showAppIcons,
                         onAppClick = viewModel::launchApp,

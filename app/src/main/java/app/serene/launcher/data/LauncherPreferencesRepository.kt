@@ -1,7 +1,9 @@
 package app.serene.launcher.data
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -10,13 +12,20 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import app.serene.launcher.model.ThemeMode
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.retryWhen
 import java.io.IOException
 
+internal val settingsCorruptionHandler = ReplaceFileCorruptionHandler<Preferences> {
+    Log.w("LauncherPreferences", "Damaged settings replaced with defaults")
+    emptyPreferences()
+}
+
 private val Context.launcherDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "serene_launcher_preferences"
+    name = "serene_launcher_preferences",
+    corruptionHandler = settingsCorruptionHandler
 )
 
 data class LauncherUserPreferences(
@@ -45,11 +54,14 @@ class LauncherPreferencesRepository(
     }
 
     val preferencesFlow: Flow<LauncherUserPreferences> = dataStore.data
-        .catch { exception ->
+        .retryWhen { exception, _ ->
             if (exception is IOException) {
+                Log.w("LauncherPreferences", "Unable to read settings; retrying")
                 emit(emptyPreferences())
+                delay(1_000)
+                true
             } else {
-                throw exception
+                false
             }
         }
         .map { prefs ->
@@ -64,6 +76,7 @@ class LauncherPreferencesRepository(
         }
 
     suspend fun initializeDefaultPinsIfNeeded(defaultIds: Set<String>) {
+        if (defaultIds.isEmpty()) return
         dataStore.edit { prefs ->
             val initialized = prefs[KEY_HAS_INITIALIZED_DEFAULT_PINS] ?: false
             if (!initialized) {

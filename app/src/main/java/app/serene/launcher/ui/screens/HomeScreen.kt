@@ -54,6 +54,7 @@ private val OpenDrawerSwipeThreshold = 48.dp
 @Composable
 fun HomeScreen(
     pinnedApps: List<AppItem>,
+    isLoading: Boolean,
     totalInstalledCount: Int,
     showAppIcons: Boolean,
     onAppClick: (AppItem) -> Unit,
@@ -117,12 +118,12 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(36.dp))
 
-                if (pinnedApps.isEmpty()) {
+                if (pinnedApps.isEmpty() && !isLoading) {
                     EmptyPinnedAppsCard(
                         onOpenDrawer = onOpenDrawer,
                         modifier = Modifier.padding(top = 24.dp)
                     )
-                } else {
+                } else if (pinnedApps.isNotEmpty()) {
                     Text(
                         text = stringResource(R.string.pinned_section_label),
                         style = MaterialTheme.typography.labelMedium,

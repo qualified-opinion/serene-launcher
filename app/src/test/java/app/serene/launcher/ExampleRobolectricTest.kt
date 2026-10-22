@@ -1,25 +1,38 @@
 package app.serene.launcher
 
-import android.app.Application
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.test.core.app.ApplicationProvider
 import app.serene.launcher.data.InstalledAppsRepository
 import app.serene.launcher.data.LauncherPreferencesRepository
+import app.serene.launcher.data.LauncherUserPreferences
 import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.app
+import app.serene.launcher.testing.temporaryPreferences
+import app.serene.launcher.testing.temporaryPreferencesStore
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class ExampleRobolectricTest {
+    @get:Rule val temporaryFolder = TemporaryFolder()
 
     @Test
     fun `read string from context`() {
@@ -69,9 +82,8 @@ class ExampleRobolectricTest {
     }
 
     @Test
-    fun `preferences repository persists pinned apps and theme toggles offline`() = runBlocking {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        val prefsRepo = LauncherPreferencesRepository(context)
+    fun `preferences repository persists pinned apps and theme toggles offline`() = runTest {
+        val prefsRepo = temporaryPreferences(temporaryFolder.newFile("settings.preferences_pb"))
 
         prefsRepo.setThemeMode(ThemeMode.DARK)
         prefsRepo.setShowAppIcons(true)
@@ -85,5 +97,34 @@ class ExampleRobolectricTest {
         prefsRepo.setPinState("system/calculator", false)
         val updated = prefsRepo.preferencesFlow.first()
         assertFalse(updated.pinnedAppIds.contains("system/calculator"))
+    }
+
+    @Test
+    fun `damaged settings load defaults and the next save succeeds`() = runTest {
+        val file = temporaryFolder.newFile("damaged.preferences_pb").apply { writeText("broken settings") }
+        val repository = temporaryPreferences(file)
+
+        assertEquals(LauncherUserPreferences(), repository.preferencesFlow.first())
+        repository.setThemeMode(ThemeMode.DARK)
+        repository.setPinState("system/calculator", true)
+        val saved = repository.preferencesFlow.first()
+        assertEquals(ThemeMode.DARK, saved.themeMode)
+        assertEquals(setOf("system/calculator"), saved.pinnedAppIds)
+    }
+
+    @Test
+    fun `preferences keep listening after a transient read failure`() = runTest {
+        val store = temporaryPreferencesStore(temporaryFolder.newFile("settings.preferences_pb"))
+        LauncherPreferencesRepository(store).setThemeMode(ThemeMode.DARK)
+        var reads = 0
+        val failingOnce = object : DataStore<Preferences> by store {
+            override val data = flow {
+                if (reads++ == 0) throw IOException("read failed")
+                emitAll(store.data)
+            }
+        }
+        val values = LauncherPreferencesRepository(failingOnce).preferencesFlow.take(2).toList()
+
+        assertEquals(listOf(ThemeMode.SYSTEM, ThemeMode.DARK), values.map { it.themeMode })
     }
 }

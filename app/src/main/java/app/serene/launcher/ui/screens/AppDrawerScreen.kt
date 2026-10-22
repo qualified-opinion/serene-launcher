@@ -61,6 +61,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AppDrawerScreen(
     apps: List<AppItem>,
+    isLoading: Boolean,
     alphabetIndexMap: Map<Char, Int>,
     availableLetters: List<Char>,
     searchQuery: String,
@@ -164,7 +165,7 @@ fun AppDrawerScreen(
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                 keyboardActions = KeyboardActions(
                                     onSearch = {
-                                        if (apps.isNotEmpty()) {
+                                        if (searchQuery.isNotBlank() && apps.isNotEmpty()) {
                                             keyboardController?.hide()
                                             onAppClick(apps.first())
                                         }
@@ -200,7 +201,7 @@ fun AppDrawerScreen(
             )
 
             // Main content area: Either "No apps found" empty state or alphabetical list + A-Z rail
-            if (apps.isEmpty()) {
+            if (apps.isEmpty() && !isLoading) {
                 EmptySearchResultsView(
                     query = searchQuery,
                     onClearSearch = onClearSearch,
@@ -208,7 +209,7 @@ fun AppDrawerScreen(
                         .fillMaxSize()
                         .padding(horizontal = 28.dp)
                 )
-            } else {
+            } else if (apps.isNotEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

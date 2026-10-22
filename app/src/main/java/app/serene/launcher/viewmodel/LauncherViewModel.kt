@@ -1,6 +1,7 @@
 package app.serene.launcher.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -15,6 +16,7 @@ import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.LauncherUiState
 import app.serene.launcher.model.StatusMessage
 import app.serene.launcher.model.ThemeMode
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -129,8 +131,13 @@ class LauncherViewModel(
             _isLoadingApps.value = true
             val loaded = installedAppsRepository.loadInstalledApps()
             _rawInstalledApps.value = loaded
-            val initialIds = installedAppsRepository.selectInitialPinnedIds(loaded)
-            preferencesRepository.initializeDefaultPinsIfNeeded(initialIds)
+            if (loaded.isNotEmpty()) {
+                savePreferences {
+                    preferencesRepository.initializeDefaultPinsIfNeeded(
+                        installedAppsRepository.selectInitialPinnedIds(loaded)
+                    )
+                }
+            }
             _isLoadingApps.value = false
         }
     }
@@ -197,10 +204,22 @@ class LauncherViewModel(
 
     fun togglePin(app: AppItem) {
         viewModelScope.launch {
-            val isNowPinned = preferencesRepository.togglePinApp(app.id)
-            _selectedAppForMenu.value = null
-            val messageRes = if (isNowPinned) R.string.status_pinned else R.string.status_unpinned
-            showTransientMessage(StatusMessage(messageRes, listOf(app.label)))
+            savePreferences {
+                val isNowPinned = preferencesRepository.togglePinApp(app.id)
+                _selectedAppForMenu.value = null
+                val messageRes = if (isNowPinned) R.string.status_pinned else R.string.status_unpinned
+                showTransientMessage(StatusMessage(messageRes, listOf(app.label)))
+            }
+        }
+    }
+
+    private suspend fun savePreferences(save: suspend () -> Unit) {
+        try {
+            save()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            Log.w("LauncherViewModel", "Unable to save launcher settings")
         }
     }
 
@@ -225,19 +244,19 @@ class LauncherViewModel(
     }
 
     fun setThemeMode(mode: ThemeMode) {
-        viewModelScope.launch { preferencesRepository.setThemeMode(mode) }
+        viewModelScope.launch { savePreferences { preferencesRepository.setThemeMode(mode) } }
     }
 
     fun setShowAppIcons(show: Boolean) {
-        viewModelScope.launch { preferencesRepository.setShowAppIcons(show) }
+        viewModelScope.launch { savePreferences { preferencesRepository.setShowAppIcons(show) } }
     }
 
     fun setAutoLaunchSingleMatch(autoLaunch: Boolean) {
-        viewModelScope.launch { preferencesRepository.setAutoLaunchSingleMatch(autoLaunch) }
+        viewModelScope.launch { savePreferences { preferencesRepository.setAutoLaunchSingleMatch(autoLaunch) } }
     }
 
     fun setOpenKeyboardOnDrawer(open: Boolean) {
-        viewModelScope.launch { preferencesRepository.setOpenKeyboardOnDrawer(open) }
+        viewModelScope.launch { savePreferences { preferencesRepository.setOpenKeyboardOnDrawer(open) } }
     }
 
     fun clearStatusMessage() {

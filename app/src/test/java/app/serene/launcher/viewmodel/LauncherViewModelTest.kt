@@ -1,5 +1,6 @@
 package app.serene.launcher.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import app.serene.launcher.R
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.model.StatusMessage
@@ -7,8 +8,11 @@ import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.FakeAppsRepository
 import app.serene.launcher.testing.InMemoryPreferencesDataStore
 import app.serene.launcher.testing.app
+import app.serene.launcher.testing.temporaryPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -21,10 +25,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LauncherViewModelTest {
+    @get:Rule val temporaryFolder = TemporaryFolder()
 
     private val dispatcher = StandardTestDispatcher()
     private val calendar = app("Calendar")
@@ -55,6 +62,41 @@ class LauncherViewModelTest {
         assertFalse(state.isLoading)
         assertEquals(listOf(calendar.id, camera.id, maps.id), state.allApps.map { it.id })
         assertEquals(listOf(maps.id), state.pinnedApps.map { it.id })
+    }
+
+    @Test
+    fun `empty scan retries default pins and initialized users are never reseeded`() = runTest(dispatcher) {
+        preferences = temporaryPreferences(temporaryFolder.newFile("settings.preferences_pb"))
+        appsRepository.apps = emptyList()
+        val viewModel = LauncherViewModel(appsRepository, preferences)
+        suspend fun awaitRefresh() {
+            // Start the refresh, then wait for its save to finish. advanceUntilIdle()
+            // alone can return while DataStore's background scope still has work.
+            runCurrent()
+            viewModel.uiState.first { !it.isLoading }
+            runCurrent()
+        }
+        try {
+            awaitRefresh()
+            assertFalse(preferences.preferencesFlow.first().hasInitializedDefaultPins)
+            assertTrue(preferences.preferencesFlow.first().pinnedAppIds.isEmpty())
+
+            appsRepository.apps = listOf(maps)
+            viewModel.refreshInstalledApps()
+            awaitRefresh()
+            assertTrue(preferences.preferencesFlow.first().hasInitializedDefaultPins)
+            assertEquals(setOf(maps.id), preferences.preferencesFlow.first().pinnedAppIds)
+            assertEquals(listOf(maps.id), viewModel.uiState.value.pinnedApps.map { it.id })
+
+            preferences.setPinState(maps.id, false)
+            viewModel.refreshInstalledApps()
+            awaitRefresh()
+            assertTrue(preferences.preferencesFlow.first().hasInitializedDefaultPins)
+            assertTrue(preferences.preferencesFlow.first().pinnedAppIds.isEmpty())
+            assertTrue(viewModel.uiState.value.pinnedApps.isEmpty())
+        } finally {
+            viewModel.viewModelScope.cancel()
+        }
     }
 
     @Test
