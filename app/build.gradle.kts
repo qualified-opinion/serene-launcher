@@ -21,7 +21,8 @@ val releaseStoreFile = signingValue("SERENE_KEYSTORE_PATH", "storeFile")
 
 android {
   namespace = "app.serene.launcher"
-  compileSdk { version = release(36) { minorApiLevel = 1 } }
+  // Compose 1.12 needs API 37 to compile against. targetSdk stays 36, so runtime behaviour is unchanged.
+  compileSdk { version = release(37) }
 
   defaultConfig {
     applicationId = "app.serene.launcher"
@@ -59,7 +60,17 @@ android {
     compose = true
     buildConfig = true
   }
-  testOptions { unitTests { isIncludeAndroidResources = true } }
+  testOptions {
+    unitTests {
+      isIncludeAndroidResources = true
+      // Print the whole stack trace in CI, since the HTML report isn't uploaded.
+      all {
+        it.testLogging { exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
+        // Robolectric 4.17 reaches into JDK internals to fake file descriptors on API 36.
+        it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
+      }
+    }
+  }
   lint {
     // Fail the build on lint errors; warnings are reported but don't block.
     abortOnError = true

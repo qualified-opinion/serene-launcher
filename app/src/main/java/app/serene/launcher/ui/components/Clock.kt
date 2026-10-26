@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -71,7 +72,8 @@ fun rememberClockText(): ClockText {
     }
 
     val is24Hour = DateFormat.is24HourFormat(context)
-    val locale = Locale.getDefault()
+    // Read from the configuration so a language change recomposes with the new locale.
+    val locale = LocalConfiguration.current.locales.get(0)
     val timeZone = TimeZone.getDefault()
     return remember(now, is24Hour, locale, timeZone) { formatClock(now, is24Hour, locale, timeZone) }
 }
