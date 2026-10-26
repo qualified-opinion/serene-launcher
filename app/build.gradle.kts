@@ -60,7 +60,13 @@ android {
     compose = true
     buildConfig = true
   }
-  testOptions { unitTests { isIncludeAndroidResources = true } }
+  testOptions {
+    unitTests {
+      isIncludeAndroidResources = true
+      // Print the whole stack trace in CI, since the HTML report isn't uploaded.
+      all { it.testLogging { exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL } }
+    }
+  }
   lint {
     // Fail the build on lint errors; warnings are reported but don't block.
     abortOnError = true
