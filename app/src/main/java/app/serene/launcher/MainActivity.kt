@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.StrictMode
 import android.provider.AlarmClock
 import android.provider.CalendarContract
 import androidx.activity.ComponentActivity
@@ -54,6 +55,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (BuildConfig.DEBUG) enableStrictMode()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -230,6 +232,12 @@ fun SereneLauncherRoot(
             }
         }
     }
+}
+
+/** Debug builds log disk and network work on the main thread, and leaked resources, to Logcat. */
+private fun enableStrictMode() {
+    StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
+    StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder().detectAll().penaltyLog().build())
 }
 
 /** Which full screen the launcher is showing. */
