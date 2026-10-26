@@ -6,7 +6,7 @@ Start with [docs/plan/ROADMAP.md](docs/plan/ROADMAP.md). It holds the status tab
 Serene Launcher is a minimalist, fully offline Android home screen. It has pinned apps on Home and a searchable A–Z drawer, and it includes work-profile apps. The owner (Jan) is not a developer, so write every PR description in plain language with phone test steps.
 
 ## Stack
-Kotlin 2.2 and Jetpack Compose, AGP 9.1.1, Gradle 9.3.1 wrapper, compileSdk and targetSdk 36, minSdk 24, DataStore Preferences. The application id is `app.serene.launcher`. Never change it.
+Kotlin 2.2 and Jetpack Compose, AGP 9.4.1, Gradle 9.8.1 wrapper, compileSdk and targetSdk 36, minSdk 24, DataStore Preferences. The application id is `app.serene.launcher`. Never change it.
 
 ## Hard rules
 - Fully offline. No `INTERNET` permission and no network libraries. CI fails if the merged release manifest gains `INTERNET`.

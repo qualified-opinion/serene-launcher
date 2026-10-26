@@ -1,6 +1,6 @@
 # Serene Launcher roadmap
 
-Updated 2026-10-22 against `main` `82082df`. This file replaces [issue #27](https://github.com/qualified-opinion/serene-launcher/issues/27) as the source of truth. Issue #27 stays open as a pointer.
+Updated 2026-10-26 against `main` `ed4e0b5`. This file replaces [issue #27](https://github.com/qualified-opinion/serene-launcher/issues/27) as the source of truth. Issue #27 stays open as a pointer.
 
 ## What this is
 A minimalist, fully offline Android home screen. It has pinned apps on Home and a searchable A–Z drawer, including work apps. It's distributed as sideloaded APKs on GitHub Releases only.
@@ -13,10 +13,16 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | B0 Docs | `docs/plan-roadmap` | This roadmap, review, packs, AGENTS.md, CLAUDE.md | Merged #30, `662a7cd` | - |
 | B1 Hardening | `fix/settings-hardening` | N-01, N-02, N-03, N-07, B15 | Merged #31, `6b4cd9f` | [batch1](handoffs/batch1-settings-hardening.md) |
 | B2 Ordered pins | `feat/ordered-pins` | #19 part 1 (B11, N-15) | Merged #32, `e70d64f` | [batch2](handoffs/batch2-ordered-pins.md) |
-| B3 Backup policy | `fix/backup-policy` | N-04, #23 shrunk | In review | [batch3](handoffs/batch3-backup-policy.md) |
-| B4 Hide apps | `feat/hide-apps` | #19 part 2, hide only | Outline | - |
-| B5 Release | `ci/release-workflow` | #24 | Outline | - |
-| B6 Publish | `docs/publish` | #25, needs the licence decision | Outline | - |
+| B3 Backup policy | `fix/backup-policy` | N-04, #23 shrunk | Merged #33, `ed4e0b5` | [batch3](handoffs/batch3-backup-policy.md) |
+| B4 Dependencies | `deps/update-batch` | Dependabot #10, #11, #28, #34 in one PR | In review | - |
+| B5 Hide and rename | `feat/hide-rename-apps` | #19 part 2, hide and rename | Next | - |
+| B6 Release | `ci/release-workflow` | #24, N-12 | Outline | - |
+| B7 Publish | `docs/publish` | #25, MIT licence | Outline | - |
+| B8 Work profiles | `fix/work-profiles` | N-05, N-06, N-10, N-16, B6 | Outline | - |
+| B9 UI tests | `test/emulator-ui` | #26 | Outline | - |
+| B10 Shortcuts and gestures | two branches | #22 and #20, run side by side | Outline | - |
+| B11 Wallpaper | `feat/wallpaper-colours` | #21 | Outline | - |
+| B12 Backup file | `feat/backup-file` | #23, the in-app export and import file | Outline | - |
 
 ## Item index
 Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review 1](reviews/kiln-review-1.md).
@@ -43,12 +49,12 @@ Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review
 | N-16 | Low | Work-profile pins transferred to a new phone may stay saved but hidden because profile serials can differ | Later |
 
 ## Decisions Jan still owes
-1. **Licence, MIT or GPL-3.0.** It's needed for B6. Default: none is added until Jan picks.
+1. **Licence.** Resolved: MIT. Jan chose it 2026-10-26. It's added in B7.
 2. **Android cloud backup, on or off.** Resolved: off. Device-to-device transfer kept. Jan confirmed 2026-10-22 (`allowBackup="false"`), which matches the offline promise. The in-app backup file in #23 stays later.
 3. **Order: hardening first, then pins.** Resolved: Jan confirmed hardening first, 2026-10-22.
 
-## Cut for the first public release (later ideas)
-#20 gestures, #21 wallpaper and Material You, #22 app shortcuts, #26 emulator UI tests, renaming apps (part of #19 part 2), a full in-app backup file (#23), and N-05, N-06, N-10, N-11. Revisit after v1.
+## After the first public release
+Jan asked on 2026-10-26 for all of #19 to #26 to be built, so nothing is cut. B4 to B7 make version 1. B8 to B12 follow it, in that order: work-profile fixes, emulator UI tests (so the bigger features are covered), shortcuts and gestures, wallpaper and Material You, and the backup file last so it covers every setting. N-11 stays open with no batch yet.
 
 ## How work is run
 1. Kiln writes the handoff pack, and Jan says go.
@@ -56,6 +62,7 @@ Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review
 3. Kiln reviews with a different engine (Claude Code for Codex-written PRs).
 4. The PR is squash-merged, pinned to the approved head, after green CI and Jan's OK.
 5. Jan does the phone checks and publishes releases himself. Agents never tag or release.
+6. From 2026-10-26, Jan has Claude Code building B4 onward. The PR description replaces the handoff pack for a batch that has none.
 
 ## Open verification (phone checks not yet done)
 - Nothing from PRs #1–#29 has been run on a physical device by a reviewer. All were checked by CI only.
@@ -65,5 +72,5 @@ Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review
 
 ## Facts for a new owner
 - `review-and-pr-plan.md`, which issue #27 mentions, is not in the repo. Issue #27 and `reviews/` are the record.
-- Three Dependabot PRs are open (#10 AGP 9.4.1, #11 Robolectric 4.17, #28 Gradle wrapper 9.8.1). They're untouched on purpose. Handle them in one dependency batch after B2.
+- Dependabot PRs #10, #11, #28 and #34 are combined in B4. Close them once B4 merges.
 - The code map: `data/` (apps via LauncherApps, icons, DataStore prefs), `domain/AppSearch.kt`, `viewmodel/LauncherViewModel.kt`, `ui/screens/`, `ui/components/`. Tests are in `app/src/test`.
