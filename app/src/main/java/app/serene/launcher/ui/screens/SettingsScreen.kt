@@ -28,16 +28,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.serene.launcher.R
+import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.ThemeMode
 
 @Composable
@@ -51,6 +54,8 @@ fun SettingsScreen(
     onAutoLaunchSingleMatchChange: (Boolean) -> Unit,
     onOpenKeyboardOnDrawerChange: (Boolean) -> Unit,
     onClose: () -> Unit,
+    hiddenApps: List<AppItem> = emptyList(),
+    onUnhideApp: (AppItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onClose)
@@ -128,6 +133,45 @@ fun SettingsScreen(
                 onCheckedChange = onOpenKeyboardOnDrawerChange,
                 testTag = "settings_open_keyboard"
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SectionHeader(R.string.settings_section_hidden)
+            if (hiddenApps.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.settings_hidden_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+            }
+            hiddenApps.forEach { app -> HiddenAppRow(app, onUnhide = { onUnhideApp(app) }) }
+        }
+    }
+}
+
+@Composable
+private fun HiddenAppRow(app: AppItem, onUnhide: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+            .testTag("settings_hidden_${app.id}"),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = app.label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f)
+        )
+        val unhideDescription = stringResource(R.string.settings_unhide_cd, app.label)
+        TextButton(
+            onClick = onUnhide,
+            modifier = Modifier.semantics { contentDescription = unhideDescription }
+        ) {
+            Text(stringResource(R.string.settings_unhide))
         }
     }
 }

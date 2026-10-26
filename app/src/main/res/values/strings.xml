@@ -49,6 +49,20 @@
     <string name="status_cant_open_calendar">Can\'t open calendar</string>
     <string name="status_pinned">Pinned %1$s to Home</string>
     <string name="status_unpinned">Unpinned %1$s from Home</string>
+    <string name="status_hidden">%1$s hidden. Unhide it in Settings.</string>
+    <string name="status_unhidden">%1$s is back in the app list</string>
+    <string name="sheet_rename">Rename</string>
+    <string name="sheet_hide">Hide from app list</string>
+    <string name="sheet_original_name">Originally %1$s</string>
+    <string name="rename_title">Rename %1$s</string>
+    <string name="rename_field_label">Name</string>
+    <string name="rename_save">Save</string>
+    <string name="rename_cancel">Cancel</string>
+    <string name="rename_reset">Use original name</string>
+    <string name="settings_section_hidden">Hidden apps</string>
+    <string name="settings_hidden_empty">No hidden apps. To hide one, press and hold it in the app list.</string>
+    <string name="settings_unhide">Unhide</string>
+    <string name="settings_unhide_cd">Unhide %1$s</string>
 
     <!-- Settings -->
     <string name="settings_open_cd">Open settings</string>

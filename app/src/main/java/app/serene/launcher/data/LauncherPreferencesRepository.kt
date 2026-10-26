@@ -55,7 +55,10 @@ data class LauncherUserPreferences(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val showAppIcons: Boolean = false,      // Pure text by default
     val autoLaunchSingleMatch: Boolean = true,
-    val openKeyboardOnDrawer: Boolean = false
+    val openKeyboardOnDrawer: Boolean = false,
+    val hiddenAppIds: Set<String> = emptySet(),
+    /** Names the user gave apps, by app id. */
+    val customLabels: Map<String, String> = emptyMap()
 )
 
 class LauncherPreferencesRepository(
@@ -73,6 +76,24 @@ class LauncherPreferencesRepository(
         val KEY_OPEN_KEYBOARD_ON_DRAWER = booleanPreferencesKey("open_keyboard_on_drawer")
         val KEY_SHOW_APP_ICONS = booleanPreferencesKey("show_app_icons")
         val KEY_AUTO_LAUNCH_SINGLE = booleanPreferencesKey("auto_launch_single_match")
+        val KEY_HIDDEN_APP_IDS = stringSetPreferencesKey("hidden_app_ids")
+        /** One "id<TAB>name" entry per line. Ids can't hold tabs or newlines, and names are stripped of them. */
+        val KEY_CUSTOM_APP_LABELS = stringPreferencesKey("custom_app_labels")
+
+        internal fun decodeLabels(stored: String?): Map<String, String> = stored.orEmpty()
+            .lineSequence()
+            .mapNotNull { line ->
+                val tab = line.indexOf('\t')
+                if (tab <= 0 || tab == line.length - 1) null else line.substring(0, tab) to line.substring(tab + 1)
+            }
+            .toMap()
+
+        internal fun encodeLabels(labels: Map<String, String>): String =
+            labels.entries.joinToString("\n") { (id, name) -> "$id\t$name" }
+
+        /** Trims a name and turns tabs, newlines and other control characters into spaces. */
+        internal fun cleanLabel(name: String): String =
+            name.map { if (it.isISOControl()) ' ' else it }.joinToString("").trim()
     }
 
     val preferencesFlow = preferencesFlow(flowOf(emptyList()))
@@ -96,7 +117,9 @@ class LauncherPreferencesRepository(
                 themeMode = ThemeMode.fromStored(prefs[KEY_THEME_MODE], prefs[KEY_IS_DARK_THEME]),
                 showAppIcons = prefs[KEY_SHOW_APP_ICONS] ?: false,
                 autoLaunchSingleMatch = prefs[KEY_AUTO_LAUNCH_SINGLE] ?: true,
-                openKeyboardOnDrawer = prefs[KEY_OPEN_KEYBOARD_ON_DRAWER] ?: false
+                openKeyboardOnDrawer = prefs[KEY_OPEN_KEYBOARD_ON_DRAWER] ?: false,
+                hiddenAppIds = prefs[KEY_HIDDEN_APP_IDS] ?: emptySet(),
+                customLabels = decodeLabels(prefs[KEY_CUSTOM_APP_LABELS])
             )
         }
 
@@ -161,11 +184,23 @@ class LauncherPreferencesRepository(
 
     suspend fun prunePins(packageName: String, profileSerial: Long?, apps: List<AppItem>) {
         dataStore.edit { prefs ->
-            val order = pinOrder(prefs, apps)
-            val kept = order.filterNot { id ->
-                id.substringBefore('/') == packageName &&
-                    (if (profileSerial == null) '@' !in id else id.endsWith("@$profileSerial"))
+            fun isRemoved(id: String) = id.substringBefore('/') == packageName &&
+                (if (profileSerial == null) '@' !in id else id.endsWith("@$profileSerial"))
+
+            // An uninstalled app also loses its hidden flag and custom name.
+            val hidden = prefs[KEY_HIDDEN_APP_IDS].orEmpty()
+            if (hidden.any(::isRemoved)) {
+                prefs[KEY_HIDDEN_APP_IDS] = hidden.filterNot(::isRemoved).toSet()
             }
+            val labels = decodeLabels(prefs[KEY_CUSTOM_APP_LABELS])
+            if (labels.keys.any(::isRemoved)) {
+                val keptLabels = labels.filterKeys { !isRemoved(it) }
+                if (keptLabels.isEmpty()) prefs.remove(KEY_CUSTOM_APP_LABELS)
+                else prefs[KEY_CUSTOM_APP_LABELS] = encodeLabels(keptLabels)
+            }
+
+            val order = pinOrder(prefs, apps)
+            val kept = order.filterNot(::isRemoved)
             if (kept != order) {
                 if (prefs[KEY_PINNED_APP_ORDER] == null) {
                     prefs[KEY_PINNED_APP_IDS] = kept.toSet()
@@ -173,6 +208,24 @@ class LauncherPreferencesRepository(
                     prefs.writePins(kept)
                 }
             }
+        }
+    }
+
+    suspend fun setHidden(appId: String, hidden: Boolean) {
+        dataStore.edit { prefs ->
+            val current = prefs[KEY_HIDDEN_APP_IDS] ?: emptySet()
+            prefs[KEY_HIDDEN_APP_IDS] = if (hidden) current + appId else current - appId
+        }
+    }
+
+    /** Saves [name] as the app's name, or goes back to the app's own name when [name] is blank. */
+    suspend fun setCustomLabel(appId: String, name: String?) {
+        val cleaned = name?.let(::cleanLabel).orEmpty()
+        dataStore.edit { prefs ->
+            val labels = decodeLabels(prefs[KEY_CUSTOM_APP_LABELS]).toMutableMap()
+            if (cleaned.isEmpty()) labels.remove(appId) else labels[appId] = cleaned
+            if (labels.isEmpty()) prefs.remove(KEY_CUSTOM_APP_LABELS)
+            else prefs[KEY_CUSTOM_APP_LABELS] = encodeLabels(labels)
         }
     }
 

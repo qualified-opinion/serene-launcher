@@ -355,4 +355,82 @@ class LauncherViewModelTest {
         assertFalse(state.autoLaunchSingleMatch)
         assertTrue(state.openKeyboardOnDrawer)
     }
+
+    @Test
+    fun `hiding an app removes it from the drawer and Home and unhiding brings both back`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+
+        viewModel.hideApp(maps)
+        runCurrent()
+        var state = viewModel.uiState.value
+        assertEquals(StatusMessage(R.string.status_hidden, listOf("Maps")), state.statusMessage)
+        advanceUntilIdle()
+        state = viewModel.uiState.value
+        assertEquals(listOf(calendar.id, camera.id), state.filteredDrawerApps.map { it.id })
+        assertTrue(state.pinnedApps.isEmpty())
+        assertEquals(listOf(maps.id), state.hiddenApps.map { it.id })
+
+        viewModel.unhideApp(state.hiddenApps.single())
+        advanceUntilIdle()
+        state = viewModel.uiState.value
+        assertEquals(listOf(maps.id), state.pinnedApps.map { it.id })
+        assertTrue(state.hiddenApps.isEmpty())
+    }
+
+    @Test
+    fun `typing never auto-opens a hidden app`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        viewModel.hideApp(maps)
+        advanceUntilIdle()
+
+        viewModel.openDrawer()
+        viewModel.onSearchQueryChanged("m")
+        advanceUntilIdle()
+
+        // "m" still finds Camera, but only as a contains match, which never opens by itself.
+        assertTrue(appsRepository.launched.isEmpty())
+        assertEquals(listOf(camera.id), viewModel.uiState.value.filteredDrawerApps.map { it.id })
+    }
+
+    @Test
+    fun `renaming an app shows and sorts the new name and resetting restores it`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+
+        viewModel.startRenaming(maps)
+        advanceUntilIdle()
+        assertEquals(maps.id, viewModel.uiState.value.appBeingRenamed?.id)
+
+        viewModel.finishRenaming("  Atlas\t ")
+        advanceUntilIdle()
+        var state = viewModel.uiState.value
+        assertNull(state.appBeingRenamed)
+        assertEquals(listOf("Atlas", "Calendar", "Camera"), state.allApps.map { it.label })
+        assertEquals("Maps", state.allApps.first().originalLabel)
+        assertEquals("Atlas", state.pinnedApps.single().label)
+
+        viewModel.onSearchQueryChanged("atl")
+        advanceUntilIdle()
+        assertEquals(listOf(maps.id), viewModel.uiState.value.filteredDrawerApps.map { it.id })
+        viewModel.clearSearch()
+
+        viewModel.startRenaming(state.allApps.first())
+        viewModel.finishRenaming(null)
+        advanceUntilIdle()
+        state = viewModel.uiState.value
+        assertEquals(listOf("Calendar", "Camera", "Maps"), state.allApps.map { it.label })
+        assertNull(state.allApps.last().originalLabel)
+    }
+
+    @Test
+    fun `cancelling a rename keeps the name`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+
+        viewModel.startRenaming(camera)
+        viewModel.cancelRenaming()
+        viewModel.finishRenaming("Ignored")
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.appBeingRenamed)
+        assertEquals(listOf("Calendar", "Camera", "Maps"), viewModel.uiState.value.allApps.map { it.label })
+    }
 }

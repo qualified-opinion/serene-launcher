@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Launch
 import androidx.compose.material.icons.automirrored.outlined.Message
@@ -35,6 +37,7 @@ import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.CloudQueue
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Language
@@ -46,12 +49,15 @@ import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -62,6 +68,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -86,6 +93,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -491,7 +499,9 @@ fun AppContextActionSheet(
     onTogglePin: () -> Unit,
     onOpenApp: () -> Unit,
     onAppInfo: () -> Unit,
-    onReorderPins: () -> Unit = {}
+    onReorderPins: () -> Unit = {},
+    onRename: () -> Unit = {},
+    onHide: () -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -524,6 +534,13 @@ fun AppContextActionSheet(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    app.originalLabel?.let { original ->
+                        Text(
+                            text = stringResource(R.string.sheet_original_name, original),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
@@ -566,6 +583,9 @@ fun AppContextActionSheet(
                     Text(reorder)
                 }
             }
+
+            SheetActionRow(Icons.Outlined.Edit, stringResource(R.string.sheet_rename), onRename, "sheet_rename_button")
+            SheetActionRow(Icons.Outlined.VisibilityOff, stringResource(R.string.sheet_hide), onHide, "sheet_hide_button")
 
             // Secondary action: Open App
             Row(
@@ -619,6 +639,75 @@ fun AppContextActionSheet(
         }
     }
 }
+
+@Composable
+private fun SheetActionRow(icon: ImageVector, text: String, onClick: () -> Unit, testTag: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp, horizontal = 8.dp)
+            .testTag(testTag),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+/** Asks for a new name for [app]. Saving a blank name goes back to the app's own name. */
+@Composable
+fun RenameAppDialog(
+    app: AppItem,
+    onSave: (String) -> Unit,
+    onReset: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by rememberSaveable(app.id) { mutableStateOf(app.label) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.rename_title, app.originalLabel ?: app.label)) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it.take(MAX_APP_NAME_LENGTH) },
+                label = { Text(stringResource(R.string.rename_field_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { onSave(name) }),
+                modifier = Modifier.testTag("rename_field")
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(name) }, modifier = Modifier.testTag("rename_save_button")) {
+                Text(stringResource(R.string.rename_save))
+            }
+        },
+        dismissButton = {
+            Row {
+                if (app.originalLabel != null) {
+                    TextButton(onClick = onReset, modifier = Modifier.testTag("rename_reset_button")) {
+                        Text(stringResource(R.string.rename_reset))
+                    }
+                }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.rename_cancel)) }
+            }
+        }
+    )
+}
+
+private const val MAX_APP_NAME_LENGTH = 40
 
 @Composable
 fun TransientStatusPill(
