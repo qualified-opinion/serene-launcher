@@ -15,7 +15,7 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | B2 Ordered pins | `feat/ordered-pins` | #19 part 1 (B11, N-15) | Merged #32, `e70d64f` | [batch2](handoffs/batch2-ordered-pins.md) |
 | B3 Backup policy | `fix/backup-policy` | N-04, #23 shrunk | Merged #33, `ed4e0b5` | [batch3](handoffs/batch3-backup-policy.md) |
 | B4 Dependencies | `deps/update-batch` | Dependabot #10, #11, #28, #34 in one PR | In review | - |
-| B5 Hide and rename | `feat/hide-rename-apps` | #19 part 2, hide and rename | Next | - |
+| B5 Hide and rename | `feat/hide-rename-apps` | #19 part 2, hide and rename | Merged #36, `ee97e62` | - |
 | B6 Release | `ci/release-workflow` | #24, N-12 | Outline | - |
 | B7 Publish | `docs/publish` | #25, MIT licence | Outline | - |
 | B8 Work profiles | `fix/work-profiles` | N-05, N-06, N-10, N-16, B6 | Outline | - |
