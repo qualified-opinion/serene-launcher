@@ -21,7 +21,8 @@ val releaseStoreFile = signingValue("SERENE_KEYSTORE_PATH", "storeFile")
 
 android {
   namespace = "app.serene.launcher"
-  compileSdk { version = release(36) { minorApiLevel = 1 } }
+  // Compose 1.12 needs API 37 to compile against. targetSdk stays 36, so runtime behaviour is unchanged.
+  compileSdk { version = release(37) }
 
   defaultConfig {
     applicationId = "app.serene.launcher"
