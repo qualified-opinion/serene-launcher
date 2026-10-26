@@ -19,6 +19,18 @@ fun signingValue(envName: String, propName: String): String? =
 
 val releaseStoreFile = signingValue("SERENE_KEYSTORE_PATH", "storeFile")
 
+// The release workflow passes the tag without its "v" (-PsereneVersion=1.2.3). Local builds
+// without it are marked as dev builds with the lowest version code.
+val sereneVersion = providers.gradleProperty("sereneVersion").orNull?.takeIf { it.isNotBlank() }
+val sereneVersionParts = sereneVersion?.let {
+  requireNotNull(Regex("""(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?""").matchEntire(it)) {
+    "sereneVersion must look like 1.2.3 or 1.2.3-beta1, got '$it'"
+  }.groupValues.drop(1).take(3).map(String::toInt)
+}
+require(sereneVersionParts == null || sereneVersionParts.drop(1).all { it < 100 }) {
+  "Minor and patch versions must be below 100 so the version code keeps increasing"
+}
+
 android {
   namespace = "app.serene.launcher"
   // Compose 1.12 needs API 37 to compile against. targetSdk stays 36, so runtime behaviour is unchanged.
@@ -28,8 +40,9 @@ android {
     applicationId = "app.serene.launcher"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "0.1.0"
+    // 1.2.3 -> 10203. A pre-release such as 1.2.3-beta1 shares the code of 1.2.3.
+    versionCode = sereneVersionParts?.let { (major, minor, patch) -> major * 10_000 + minor * 100 + patch } ?: 1
+    versionName = sereneVersion ?: "0.0.0-dev"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -47,7 +60,9 @@ android {
 
   buildTypes {
     release {
-      isMinifyEnabled = false
+      // R8 drops unused code, including most of the extended icon set, and unused resources.
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfigs.findByName("release")?.let { signingConfig = it }
     }
