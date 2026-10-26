@@ -37,6 +37,7 @@ class LauncherViewModel(
     private val _isDrawerOpen = MutableStateFlow(false)
     private val _selectedAppForMenu = MutableStateFlow<AppItem?>(null)
     private val _isReordering = MutableStateFlow(false)
+    private val _appBeingRenamed = MutableStateFlow<AppItem?>(null)
     private val _isSettingsOpen = MutableStateFlow(false)
     private val _statusMessage = MutableStateFlow<StatusMessage?>(null)
 
@@ -90,8 +91,10 @@ class LauncherViewModel(
                     statusMessage = status,
                     isSettingsOpen = settingsOpen
                 )
-            }.combine(_isReordering) { state, reordering ->
-                state.copy(isReorderingPins = reordering)
+            }.combine(
+                combine(_isReordering, _appBeingRenamed) { reordering, renaming -> reordering to renaming }
+            ) { state, (reordering, renaming) ->
+                state.copy(isReorderingPins = reordering, appBeingRenamed = renaming)
             }.collect { state ->
                 _uiState.value = state
             }
@@ -107,19 +110,30 @@ class LauncherViewModel(
         selectedApp: AppItem?,
         statusMessage: StatusMessage?
     ): LauncherUiState {
-        val allAppsWithPin = rawApps.map { app ->
-            app.copy(isPinned = prefs.pinnedAppIds.contains(app.id))
+        val labelledApps = rawApps.map { app ->
+            val customLabel = prefs.customLabels[app.id]
+            app.copy(
+                label = customLabel ?: app.label,
+                originalLabel = if (customLabel != null) app.label else null,
+                isPinned = prefs.pinnedAppIds.contains(app.id),
+                isHidden = app.id in prefs.hiddenAppIds
+            )
         }
+        // Renamed apps move to where their new name sorts.
+        val allAppsWithPin = if (prefs.customLabels.isEmpty()) labelledApps else AppSearch.sort(labelledApps)
+        val (hiddenApps, visibleApps) = allAppsWithPin.partition { it.isHidden }
 
-        val appsById = allAppsWithPin.associateBy { it.id }
+        // Hidden apps leave Home too, but their pins stay saved for when they're unhidden.
+        val appsById = visibleApps.associateBy { it.id }
         val pinnedApps = prefs.pinnedAppOrder.mapNotNull { appsById[it] }
-        val filteredDrawerApps = AppSearch.filter(allAppsWithPin, query)
+        val filteredDrawerApps = AppSearch.filter(visibleApps, query)
         val alphabetMap = AppSearch.alphabetIndex(filteredDrawerApps)
 
         return LauncherUiState(
             isLoading = isLoading,
             pinnedApps = pinnedApps,
-            allApps = allAppsWithPin,
+            allApps = visibleApps,
+            hiddenApps = hiddenApps,
             filteredDrawerApps = filteredDrawerApps,
             alphabetIndexMap = alphabetMap,
             availableLetters = AppSearch.railLetters,
@@ -234,7 +248,44 @@ class LauncherViewModel(
     fun finishReorderingPins() { _isReordering.value = false }
 
     fun movePin(app: AppItem, offset: Int) {
-        viewModelScope.launch { savePreferences { preferencesRepository.movePin(app.id, offset, _rawInstalledApps.value) } }
+        val hiddenIds = _uiState.value.hiddenApps.map { it.id }.toSet()
+        val shownApps = _rawInstalledApps.value.filterNot { it.id in hiddenIds }
+        viewModelScope.launch { savePreferences { preferencesRepository.movePin(app.id, offset, shownApps) } }
+    }
+
+    fun hideApp(app: AppItem) {
+        _selectedAppForMenu.value = null
+        viewModelScope.launch {
+            savePreferences {
+                preferencesRepository.setHidden(app.id, hidden = true)
+                showTransientMessage(StatusMessage(R.string.status_hidden, listOf(app.label)))
+            }
+        }
+    }
+
+    fun unhideApp(app: AppItem) {
+        viewModelScope.launch {
+            savePreferences {
+                preferencesRepository.setHidden(app.id, hidden = false)
+                showTransientMessage(StatusMessage(R.string.status_unhidden, listOf(app.label)))
+            }
+        }
+    }
+
+    fun startRenaming(app: AppItem) {
+        _selectedAppForMenu.value = null
+        _appBeingRenamed.value = app
+    }
+
+    fun cancelRenaming() {
+        _appBeingRenamed.value = null
+    }
+
+    /** Saves [name] for the app being renamed; a blank name, or null, goes back to the app's own name. */
+    fun finishRenaming(name: String?) {
+        val app = _appBeingRenamed.value ?: return
+        _appBeingRenamed.value = null
+        viewModelScope.launch { savePreferences { preferencesRepository.setCustomLabel(app.id, name) } }
     }
 
     private suspend fun savePreferences(save: suspend () -> Unit) {

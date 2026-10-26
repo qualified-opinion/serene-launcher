@@ -32,7 +32,10 @@ data class AppItem(
     val isPinned: Boolean = false,
     /** Serial number of the Android user profile the app belongs to (personal, work, ...). */
     val profileSerial: Long = 0L,
-    val isWorkProfile: Boolean = false
+    val isWorkProfile: Boolean = false,
+    val isHidden: Boolean = false,
+    /** The app's own name when the user renamed it, so it can be shown and restored. */
+    val originalLabel: String? = null
 ) {
     val firstLetterSection: Char
         get() = AppSearch.sectionOf(label)
@@ -42,6 +45,8 @@ data class LauncherUiState(
     val isLoading: Boolean = true,
     val pinnedApps: List<AppItem> = emptyList(),
     val allApps: List<AppItem> = emptyList(),
+    /** Apps the user hid from the drawer, for the Settings list. */
+    val hiddenApps: List<AppItem> = emptyList(),
     val filteredDrawerApps: List<AppItem> = emptyList(),
     val alphabetIndexMap: Map<Char, Int> = emptyMap(),
     val availableLetters: List<Char> = AppSearch.railLetters,
@@ -54,6 +59,7 @@ data class LauncherUiState(
     val autoLaunchSingleMatch: Boolean = true,
     val openKeyboardOnDrawer: Boolean = false,
     val selectedAppForMenu: AppItem? = null,
+    val appBeingRenamed: AppItem? = null,
     val statusMessage: StatusMessage? = null
 )
 

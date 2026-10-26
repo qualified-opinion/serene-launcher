@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.serene.launcher.data.AppIconLoader
 import app.serene.launcher.ui.components.AppContextActionSheet
 import app.serene.launcher.ui.components.LocalAppIconLoader
+import app.serene.launcher.ui.components.RenameAppDialog
 import app.serene.launcher.ui.components.TransientStatusPill
 import app.serene.launcher.ui.screens.AppDrawerScreen
 import app.serene.launcher.model.ThemeMode
@@ -147,6 +148,8 @@ fun SereneLauncherRoot(
                         onShowAppIconsChange = viewModel::setShowAppIcons,
                         onAutoLaunchSingleMatchChange = viewModel::setAutoLaunchSingleMatch,
                         onOpenKeyboardOnDrawerChange = viewModel::setOpenKeyboardOnDrawer,
+                        hiddenApps = uiState.hiddenApps,
+                        onUnhideApp = viewModel::unhideApp,
                         onClose = viewModel::closeSettings
                     )
                     LauncherScreen.DRAWER -> AppDrawerScreen(
@@ -211,7 +214,18 @@ fun SereneLauncherRoot(
                     onTogglePin = { viewModel.togglePin(selectedApp) },
                     onOpenApp = { viewModel.launchApp(selectedApp) },
                     onAppInfo = { viewModel.openAppInfo(selectedApp) },
-                    onReorderPins = viewModel::startReorderingPins
+                    onReorderPins = viewModel::startReorderingPins,
+                    onRename = { viewModel.startRenaming(selectedApp) },
+                    onHide = { viewModel.hideApp(selectedApp) }
+                )
+            }
+
+            uiState.appBeingRenamed?.let { app ->
+                RenameAppDialog(
+                    app = app,
+                    onSave = viewModel::finishRenaming,
+                    onReset = { viewModel.finishRenaming(null) },
+                    onDismiss = viewModel::cancelRenaming
                 )
             }
         }
