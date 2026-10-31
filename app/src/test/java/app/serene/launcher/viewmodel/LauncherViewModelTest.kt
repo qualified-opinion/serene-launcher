@@ -436,7 +436,9 @@ class LauncherViewModelTest {
         assertEquals(listOf("Calendar", "Camera", "Maps"), viewModel.uiState.value.allApps.map { it.label })
     }
 
-    private val workMaps = app("Maps", "pkg.maps/Main@10").copy(profileSerial = 10, profileKind = ProfileKind.WORK)
+    // The test helper takes the activity from the id, so set it to match the personal copy.
+    private val workMaps = app("Maps", "pkg.maps/Main@10")
+        .copy(activityName = "Main", profileSerial = 10, profileKind = ProfileKind.WORK)
 
     @Test
     fun `typing opens the personal copy of an app installed in both profiles`() = runTest(dispatcher) {
