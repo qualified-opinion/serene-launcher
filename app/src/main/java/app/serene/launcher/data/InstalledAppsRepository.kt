@@ -60,6 +60,10 @@ class InstalledAppsRepository(
                 Log.w(TAG, "Not allowed to list apps in profile $serial; keeping the last list")
                 return@flatMap lastAppsByProfile[serial].orEmpty().map { it.copy(isProfilePaused = isPaused) }
             }
+            // Some phones list nothing for a paused profile; show its apps as paused instead.
+            if (isPaused && activities.isEmpty()) {
+                return@flatMap lastAppsByProfile[serial].orEmpty().map { it.copy(isProfilePaused = true) }
+            }
             activities
                 .filterNot { it.componentName.packageName == ownPackage }
                 .map { info ->
