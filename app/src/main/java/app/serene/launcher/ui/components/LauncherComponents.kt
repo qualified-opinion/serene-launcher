@@ -1,5 +1,6 @@
 package app.serene.launcher.ui.components
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -101,6 +102,7 @@ import app.serene.launcher.R
 import app.serene.launcher.data.AppIconLoader
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.FallbackIconGlyph
+import app.serene.launcher.model.ProfileKind
 
 @Composable
 fun MinimalClockDateHeader(
@@ -264,20 +266,29 @@ fun PinnedAppRow(
         )
 
         if (app.isWorkProfile) {
-            WorkProfileLabel(modifier = Modifier.padding(start = 10.dp))
+            ProfileLabel(app, modifier = Modifier.padding(start = 10.dp))
         }
     }
 }
 
-/** Small "Work" tag so work-profile apps can be told apart from personal ones in text mode. */
+/** Small "Work", "Private" or "Clone" tag so apps from other profiles can be told apart, with "paused" when off. */
 @Composable
-private fun WorkProfileLabel(modifier: Modifier = Modifier) {
+private fun ProfileLabel(app: AppItem, modifier: Modifier = Modifier) {
+    val kind = stringResource(profileLabelRes(app.profileKind))
     Text(
-        text = stringResource(R.string.work_profile_label),
+        text = if (app.isProfilePaused) stringResource(R.string.paused_profile_label, kind) else kind,
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
     )
+}
+
+@StringRes
+fun profileLabelRes(kind: ProfileKind): Int = when (kind) {
+    ProfileKind.PERSONAL, ProfileKind.WORK -> R.string.work_profile_label
+    ProfileKind.PRIVATE -> R.string.private_profile_label
+    ProfileKind.CLONE -> R.string.clone_profile_label
+    ProfileKind.OTHER -> R.string.other_profile_label
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -334,7 +345,7 @@ fun DrawerAppRow(
             )
 
             if (app.isWorkProfile) {
-                WorkProfileLabel(modifier = Modifier.padding(start = 10.dp))
+                ProfileLabel(app, modifier = Modifier.padding(start = 10.dp))
             }
 
             if (app.isPinned) {

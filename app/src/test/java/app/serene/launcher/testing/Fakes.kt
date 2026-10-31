@@ -25,6 +25,14 @@ class FakeAppsRepository(
     /** When true, launching and opening app info fail, as they would for an app that was just removed. */
     var failLaunches = false
 
+    /** When set, launching fails with this error, for example a [app.serene.launcher.data.ProfilePausedException]. */
+    var launchError: Throwable? = null
+
+    /** What [profileSerials] reports; null means some profiles may be invisible. */
+    var liveSerials: Set<Long>? = null
+
+    override fun profileSerials(): Set<Long>? = liveSerials
+
     override suspend fun loadInstalledApps(): List<AppItem> = apps
 
     val changes = MutableSharedFlow<AppChange>()
@@ -34,6 +42,7 @@ class FakeAppsRepository(
 
     override fun launchApp(app: AppItem): Result<Unit> {
         if (failLaunches) return Result.failure(IllegalStateException("launch failed"))
+        launchError?.let { return Result.failure(it) }
         launched += app
         return Result.success(Unit)
     }

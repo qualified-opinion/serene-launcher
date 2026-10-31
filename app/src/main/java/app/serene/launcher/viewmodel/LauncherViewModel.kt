@@ -12,9 +12,11 @@ import app.serene.launcher.data.AppsRepository
 import app.serene.launcher.data.InstalledAppsRepository
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.data.LauncherUserPreferences
+import app.serene.launcher.data.ProfilePausedException
 import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.LauncherUiState
+import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.StatusMessage
 import app.serene.launcher.model.ThemeMode
 import kotlinx.coroutines.CancellationException
@@ -157,6 +159,9 @@ class LauncherViewModel(
             _rawInstalledApps.value = loaded
             if (loaded.isNotEmpty()) {
                 savePreferences {
+                    preferencesRepository.adoptSettingsFromGoneProfiles(loaded, installedAppsRepository.profileSerials())
+                }
+                savePreferences {
                     preferencesRepository.initializeDefaultPinsIfNeeded(
                         installedAppsRepository.selectInitialPinnedIds(loaded)
                     )
@@ -188,7 +193,7 @@ class LauncherViewModel(
 
         if (currentState.autoLaunchSingleMatch && typedOneCharacter) {
             val matches = AppSearch.filter(currentState.allApps, trimmed)
-            val matchedApp = matches.singleOrNull()
+            val matchedApp = matches.singleOrNull() ?: personalCopyIfSameApp(matches)
             // Only a label that starts with the query opens by itself, never a word-start or initials match.
             if (matchedApp != null && AppSearch.isPrefixMatch(matchedApp.label, trimmed)) {
                 installedAppsRepository.launchApp(matchedApp)
@@ -197,9 +202,31 @@ class LauncherViewModel(
                         _isDrawerOpen.value = false
                         showTransientMessage(StatusMessage(R.string.status_auto_opened, listOf(matchedApp.label)))
                     }
-                    .onFailure { showTransientMessage(StatusMessage(R.string.status_cant_open, listOf(matchedApp.label))) }
+                    .onFailure { showLaunchFailure(matchedApp, it) }
             }
         }
+    }
+
+    /**
+     * When every match is the same app installed in several profiles (personal and work), the
+     * personal copy, so typing its name still opens it. Null when the matches are different apps.
+     */
+    private fun personalCopyIfSameApp(matches: List<AppItem>): AppItem? {
+        if (matches.size < 2) return null
+        val sameApp = matches.all {
+            it.packageName == matches[0].packageName && it.activityName == matches[0].activityName &&
+                it.label == matches[0].label
+        }
+        return if (sameApp) matches.singleOrNull { it.profileKind == ProfileKind.PERSONAL } else null
+    }
+
+    private fun showLaunchFailure(app: AppItem, error: Throwable) {
+        val messageRes = when {
+            error !is ProfilePausedException -> R.string.status_cant_open
+            error.resumeRequested -> R.string.status_resuming_profile
+            else -> R.string.status_profile_paused
+        }
+        showTransientMessage(StatusMessage(messageRes, listOf(app.label)))
     }
 
     fun clearSearch() {
@@ -217,7 +244,7 @@ class LauncherViewModel(
                 }
                 showTransientMessage(StatusMessage(R.string.status_opening, listOf(app.label)))
             }
-            .onFailure { showTransientMessage(StatusMessage(R.string.status_cant_open, listOf(app.label))) }
+            .onFailure { showLaunchFailure(app, it) }
     }
 
     fun onAppLongPress(app: AppItem) {

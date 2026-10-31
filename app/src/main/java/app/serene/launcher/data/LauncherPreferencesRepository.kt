@@ -15,6 +15,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.ThemeMode
 import java.io.File
 import java.io.IOException
@@ -207,6 +208,50 @@ class LauncherPreferencesRepository(
                 } else {
                     prefs.writePins(kept)
                 }
+            }
+        }
+    }
+
+    /**
+     * Moves pins, hidden flags and names saved for a profile that no longer exists onto the same
+     * apps in the phone's work profile. A work profile gets a new serial number when it is set up
+     * again or moved to a new phone, which would otherwise leave its pins saved but never shown.
+     * Does nothing unless [liveSerials] (every profile on the phone) is known and there is exactly
+     * one work profile, and never touches settings for a profile that still exists.
+     */
+    suspend fun adoptSettingsFromGoneProfiles(apps: List<AppItem>, liveSerials: Set<Long>?) {
+        if (liveSerials == null) return
+        val target = apps.filter { it.profileKind == ProfileKind.WORK }.map { it.profileSerial }.distinct()
+            .singleOrNull() ?: return
+        val targetIds = apps.filter { it.profileSerial == target }.map { it.id }.toSet()
+
+        fun movedId(id: String): String? {
+            val at = id.lastIndexOf('@')
+            if (at < 0) return null
+            val serial = id.substring(at + 1).toLongOrNull() ?: return null
+            if (serial in liveSerials) return null
+            return "${id.substring(0, at)}@$target".takeIf { it in targetIds }
+        }
+
+        dataStore.edit { prefs ->
+            val pinIds = prefs[KEY_PINNED_APP_IDS].orEmpty()
+            val hidden = prefs[KEY_HIDDEN_APP_IDS].orEmpty()
+            val labels = decodeLabels(prefs[KEY_CUSTOM_APP_LABELS])
+            val moves = (pinIds + hidden + labels.keys).mapNotNull { id -> movedId(id)?.let { id to it } }.toMap()
+            if (moves.isEmpty()) return@edit
+            fun move(id: String) = moves[id] ?: id
+
+            if (pinIds.any { it in moves }) {
+                val order = pinOrder(prefs, apps).map(::move).distinct()
+                if (prefs[KEY_PINNED_APP_ORDER] == null) prefs[KEY_PINNED_APP_IDS] = order.toSet()
+                else prefs.writePins(order)
+            }
+            if (hidden.any { it in moves }) prefs[KEY_HIDDEN_APP_IDS] = hidden.map(::move).toSet()
+            if (labels.keys.any { it in moves }) {
+                // A name already given in the current work profile wins over the old one.
+                val moved = labels.filterKeys { it !in moves }.toMutableMap()
+                labels.filterKeys { it in moves }.forEach { (id, name) -> moved.putIfAbsent(move(id), name) }
+                prefs[KEY_CUSTOM_APP_LABELS] = encodeLabels(moved)
             }
         }
     }
