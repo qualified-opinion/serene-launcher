@@ -77,7 +77,6 @@ class InstalledAppsRepository(
                         activityName = component.className,
                         fallbackGlyph = inferFallbackGlyph(label),
                         profileSerial = serial,
-                        isWorkProfile = !isPersonal,
                         profileKind = kind,
                         isProfilePaused = isPaused
                     )

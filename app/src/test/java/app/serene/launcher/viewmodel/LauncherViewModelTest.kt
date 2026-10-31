@@ -8,6 +8,7 @@ import app.serene.launcher.R
 import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.data.ProfilePausedException
+import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.StatusMessage
 import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.FakeAppsRepository
@@ -191,7 +192,7 @@ class LauncherViewModelTest {
 
     @Test
     fun `restored pins survive empty and paused scans and appear in order when apps return`() = runTest(dispatcher) {
-        val work = app("Work", "pkg/Main@10").copy(profileSerial = 10, isWorkProfile = true)
+        val work = app("Work", "pkg/Main@10").copy(profileSerial = 10, profileKind = ProfileKind.WORK)
         val ordered = listOf(work, maps, camera)
         ordered.forEach { preferences.setPinState(it.id, true) }
         appsRepository.apps = emptyList()
@@ -435,7 +436,7 @@ class LauncherViewModelTest {
         assertEquals(listOf("Calendar", "Camera", "Maps"), viewModel.uiState.value.allApps.map { it.label })
     }
 
-    private val workMaps = app("Maps", "pkg.maps/Main@10").copy(profileSerial = 10, isWorkProfile = true)
+    private val workMaps = app("Maps", "pkg.maps/Main@10").copy(profileSerial = 10, profileKind = ProfileKind.WORK)
 
     @Test
     fun `typing opens the personal copy of an app installed in both profiles`() = runTest(dispatcher) {
@@ -452,7 +453,7 @@ class LauncherViewModelTest {
 
     @Test
     fun `different apps with the same name in two profiles still wait for more typing`() = runTest(dispatcher) {
-        val workOther = app("Maps", "other.maps/Main@10").copy(profileSerial = 10, isWorkProfile = true)
+        val workOther = app("Maps", "other.maps/Main@10").copy(profileSerial = 10, profileKind = ProfileKind.WORK)
         appsRepository = FakeAppsRepository(listOf(calendar, maps, workOther))
         val viewModel = loadedViewModel()
         viewModel.openDrawer()

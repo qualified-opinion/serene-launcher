@@ -15,7 +15,7 @@ class WorkProfileSettingsTest {
 
     private fun workApp(label: String, serial: Long, kind: ProfileKind = ProfileKind.WORK): AppItem =
         app(label, "work.${label.lowercase()}/Main@$serial")
-            .copy(profileSerial = serial, isWorkProfile = true, profileKind = kind)
+            .copy(profileSerial = serial, profileKind = kind)
 
     private val maps = app("Maps")
     private val mail = workApp("Mail", serial = 12)
