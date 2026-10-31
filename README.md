@@ -4,9 +4,27 @@ A minimalist, fully offline Android home screen. Pinned apps on a quiet home pag
 
 ## Install
 
-Download the latest APK from the [Releases](../../releases) page and open it on your phone. Android will ask you to allow installs from your browser or file manager the first time.
+Serene Launcher is only published on this project's [Releases](../../releases) page. It isn't on Google Play.
 
-Then make it your home screen: **Settings → Apps → Default apps → Home app → Serene Launcher**.
+1. On your phone, open the [latest release](../../releases/latest) and download `serene-launcher-X.Y.Z.apk`.
+2. Open the downloaded file. The first time, Android asks you to allow installs from your browser or file manager: tap **Settings**, turn on **Allow from this source**, then go back and tap **Install**.
+3. Press the Home button. If Android asks which app to use, pick **Serene Launcher** and tap **Always**. If it doesn't ask, go to **Settings → Apps → Default apps → Home app** and choose **Serene Launcher**. (The menu names differ a little between phone makers.)
+
+To check the download, compare its SHA-256 checksum with the `.sha256` file attached to the same release.
+
+### Updating
+
+Download the newer APK from Releases and install it over the old one. Your pins and settings stay. Serene Launcher never checks for updates itself, because it has no internet access; watch the repository's releases on GitHub if you want to hear about new versions.
+
+If you installed a test build made before the first signed release, Android will refuse the update because it was signed with a different key. Uninstall the old one first; this resets your pins and settings once.
+
+### Going back to your old launcher
+
+Go to **Settings → Apps → Default apps → Home app** and choose your previous launcher. To remove Serene Launcher completely, uninstall it like any other app; that also deletes everything it stored.
+
+### Privacy and licence
+
+Serene Launcher has no internet permission and collects nothing. See [PRIVACY.md](PRIVACY.md) for what it stores on your phone. Changes in each version are in [CHANGELOG.md](CHANGELOG.md). The code is open source under the [MIT licence](LICENSE).
 
 ## Build it yourself
 
@@ -80,6 +98,7 @@ Do this yourself on your own computer. Nobody else, and no AI agent, should crea
 
 1. Make sure `main` has everything you want and CI is green.
 2. Create a tag, either with `git tag v0.2.0 && git push origin v0.2.0`, or on GitHub under **Releases → Draft a new release**: type the new tag (for example `v0.2.0`) in **Choose a tag**, then press **Publish release**.
-3. The **Release** workflow builds the APK, signs it, checks it has no internet permission, and attaches `serene-launcher-0.2.0.apk` and its `.sha256` checksum to the release (creating the release if you only pushed a tag). A pushed tag with a dash, such as `v0.2.0-test`, is published as a pre-release.
+3. Before tagging, rename **Unreleased** in [CHANGELOG.md](CHANGELOG.md) to the version, for example `## [0.2.0] - 2026-11-01`. The workflow uses that section as the release notes (if you draft the release on GitHub, leave its description empty to get them) (for a tag like `v0.2.0-beta1` it looks for `0.2.0-beta1`, then `0.2.0`). Without one, GitHub writes notes from the merged PRs.
+4. The **Release** workflow builds the APK, signs it, checks it has no internet permission, and attaches `serene-launcher-0.2.0.apk` and its `.sha256` checksum to the release (creating the release if you only pushed a tag). A pushed tag with a dash, such as `v0.2.0-test`, is published as a pre-release.
 
 If a secret is missing, the workflow stops without publishing anything.
