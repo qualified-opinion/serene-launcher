@@ -18,7 +18,7 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | B5 Hide and rename | `feat/hide-rename-apps` | #19 part 2, hide and rename | Merged #36, `ee97e62` | - |
 | B6 Release | `ci/release-workflow` | #24, N-12 | Merged #37, `111de35` | - |
 | B7 Publish | `docs/publish` | #25, MIT licence | In review | - |
-| B8 Work profiles | `fix/work-profiles` | N-05, N-06, N-10, N-16, B6 | Outline | - |
+| B8 Work profiles | `fix/work-profiles` | N-05, N-06, N-10, N-16, B6 | In review | - |
 | B9 UI tests | `test/emulator-ui` | #26 | Outline | - |
 | B10 Shortcuts and gestures | two branches | #22 and #20, run side by side | Outline | - |
 | B11 Wallpaper | `feat/wallpaper-colours` | #21 | Outline | - |
@@ -29,7 +29,7 @@ Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review
 
 | Id | Sev | Problem | Where it goes |
 |---|---|---|---|
-| B6 | Med | Partly fixed: work-profile pause and resume aren't tracked (see N-05) | Later |
+| B6 | Med | Partly fixed: work-profile pause and resume aren't tracked (see N-05) | B8 |
 | B8 | Low | Possibly only partly fixed: font weights may look the same on Android 7 (API 24–25). Unverified | Later |
 | B11 | Med | Pins are always alphabetical and never cleaned up | B2 |
 | B15 | Low | Still partly broken: the start-up window is light in dark mode | B1 |
@@ -37,16 +37,16 @@ Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review
 | N-02 | Med | An empty first app scan marks default pins as done with no pins | B1 |
 | N-03 | Med | Home flashes "no pinned apps" and the drawer shows "No apps found" while loading | B1 |
 | N-04 | Med | Android cloud backup is on with unedited sample rules | B3 |
-| N-05 | Med | Work-profile add, remove, pause and resume aren't tracked. A permission error looks like an empty profile | Later |
-| N-06 | Low | Every non-personal profile is labelled "Work". Private space likely isn't listed | Later |
+| N-05 | Med | Work-profile add, remove, pause and resume aren't tracked. A permission error looks like an empty profile | B8 |
+| N-06 | Low | Every non-personal profile is labelled "Work". Private space likely isn't listed | B8 |
 | N-07 | Low | The keyboard Search key with an empty search box opens the first app | B1 |
 | N-09 | Low | After a read error, settings stay at defaults until restart | B1 (with N-01) |
-| N-10 | Low | Typing never auto-opens an app installed in both profiles | Later |
+| N-10 | Low | Typing never auto-opens an app installed in both profiles | B8 |
 | N-11 | Low | Many installs in a row each trigger a full reload | Later |
 | N-12 | Low | The release build isn't shrunk and ships the full extended icon library | B5 |
 | N-13 | Low | A unit test writes the real settings file and never cleans up | B1 |
 | N-15 | Low | A pin disappears from Home when an app renames its activity, but stays stored | B2 (skip, don't delete) |
-| N-16 | Low | Work-profile pins transferred to a new phone may stay saved but hidden because profile serials can differ | Later |
+| N-16 | Low | Work-profile pins transferred to a new phone may stay saved but hidden because profile serials can differ | B8 |
 
 ## Decisions Jan still owes
 1. **Licence.** Resolved: MIT. Jan chose it 2026-10-26. It's added in B7.

@@ -10,6 +10,11 @@
         </intent>
     </queries>
 
+    <!-- Lets the default launcher list a private space (Android 15+), whose apps are hidden while it is locked. -->
+    <uses-permission
+        android:name="android.permission.ACCESS_HIDDEN_PROFILES"
+        tools:ignore="ProtectedPermissions" />
+
     <!-- Backup is off on every API level, so API 24-30 needs no fullBackupContent. -->
     <application
         android:allowBackup="false"

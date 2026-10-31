@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import app.serene.launcher.R
 import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.LauncherPreferencesRepository
+import app.serene.launcher.data.ProfilePausedException
+import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.StatusMessage
 import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.FakeAppsRepository
@@ -190,7 +192,7 @@ class LauncherViewModelTest {
 
     @Test
     fun `restored pins survive empty and paused scans and appear in order when apps return`() = runTest(dispatcher) {
-        val work = app("Work", "pkg/Main@10").copy(profileSerial = 10, isWorkProfile = true)
+        val work = app("Work", "pkg/Main@10").copy(profileSerial = 10, profileKind = ProfileKind.WORK)
         val ordered = listOf(work, maps, camera)
         ordered.forEach { preferences.setPinState(it.id, true) }
         appsRepository.apps = emptyList()
@@ -432,5 +434,64 @@ class LauncherViewModelTest {
 
         assertNull(viewModel.uiState.value.appBeingRenamed)
         assertEquals(listOf("Calendar", "Camera", "Maps"), viewModel.uiState.value.allApps.map { it.label })
+    }
+
+    // The test helper takes the activity from the id, so set it to match the personal copy.
+    private val workMaps = app("Maps", "pkg.maps/Main@10")
+        .copy(activityName = "Main", profileSerial = 10, profileKind = ProfileKind.WORK)
+
+    @Test
+    fun `typing opens the personal copy of an app installed in both profiles`() = runTest(dispatcher) {
+        appsRepository = FakeAppsRepository(listOf(calendar, maps, workMaps))
+        val viewModel = loadedViewModel()
+        viewModel.openDrawer()
+        advanceUntilIdle()
+
+        viewModel.onSearchQueryChanged("m")
+        advanceUntilIdle()
+
+        assertEquals(listOf(maps.id), appsRepository.launched.map { it.id })
+    }
+
+    @Test
+    fun `different apps with the same name in two profiles still wait for more typing`() = runTest(dispatcher) {
+        val workOther = app("Maps", "other.maps/Main@10").copy(profileSerial = 10, profileKind = ProfileKind.WORK)
+        appsRepository = FakeAppsRepository(listOf(calendar, maps, workOther))
+        val viewModel = loadedViewModel()
+        viewModel.openDrawer()
+        advanceUntilIdle()
+
+        viewModel.onSearchQueryChanged("m")
+        advanceUntilIdle()
+
+        assertTrue(appsRepository.launched.isEmpty())
+    }
+
+    @Test
+    fun `opening an app in a paused work profile says so`() = runTest(dispatcher) {
+        appsRepository = FakeAppsRepository(listOf(calendar, maps, workMaps))
+        val viewModel = loadedViewModel()
+        try {
+            appsRepository.launchError = ProfilePausedException(resumeRequested = true)
+            viewModel.launchApp(workMaps)
+            runCurrent()
+            assertEquals(StatusMessage(R.string.status_resuming_profile, listOf("Maps")), viewModel.uiState.value.statusMessage)
+
+            appsRepository.launchError = ProfilePausedException(resumeRequested = false)
+            viewModel.launchApp(workMaps)
+            runCurrent()
+            assertEquals(StatusMessage(R.string.status_profile_paused, listOf("Maps")), viewModel.uiState.value.statusMessage)
+        } finally { viewModel.viewModelScope.cancel() }
+    }
+
+    @Test
+    fun `work pins from an old phone show up on Home after the first scan`() = runTest(dispatcher) {
+        preferences.setPinState("pkg.maps/Main@5", pinned = true)
+        appsRepository = FakeAppsRepository(listOf(calendar, maps, workMaps))
+        appsRepository.liveSerials = setOf(0L, 10L)
+
+        val state = loadedViewModel().uiState.value
+
+        assertEquals(listOf(workMaps.id), state.pinnedApps.map { it.id })
     }
 }

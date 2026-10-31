@@ -1,17 +1,23 @@
 package app.serene.launcher
 
 import android.content.Context
+import android.content.Intent
+import android.os.Looper
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.test.core.app.ApplicationProvider
+import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.InstalledAppsRepository
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.data.LauncherUserPreferences
+import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.app
 import app.serene.launcher.testing.temporaryPreferences
 import app.serene.launcher.testing.temporaryPreferencesStore
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.emitAll
@@ -21,6 +27,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -29,6 +36,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.io.IOException
 
@@ -53,10 +61,21 @@ class ExampleRobolectricTest {
     }
 
     @Test
+    fun `pausing or resuming a work profile asks for a refresh`() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val change = async(Dispatchers.Unconfined) { InstalledAppsRepository(context).appChanges().first() }
+
+        context.sendBroadcast(Intent(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(AppChange.Refresh, withTimeout(5_000) { change.await() })
+    }
+
+    @Test
     fun `initial pins prefer exact matches and skip work apps`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val repo = InstalledAppsRepository(context)
-        val workPhone = app("Phone", id = "work.phone/Main@10").copy(profileSerial = 10, isWorkProfile = true)
+        val workPhone = app("Phone", id = "work.phone/Main@10").copy(profileSerial = 10, profileKind = ProfileKind.WORK)
         val apps = listOf(
             app("Phone Backup"),
             app("Phone"),

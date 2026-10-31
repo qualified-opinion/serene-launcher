@@ -17,6 +17,10 @@
     <string name="clear_search_cd">Clear search query</string>
     <string name="long_press_hint">Tip: Long-press any app to pin or unpin</string>
     <string name="work_profile_label">Work</string>
+    <string name="private_profile_label">Private</string>
+    <string name="clone_profile_label">Clone</string>
+    <string name="other_profile_label">Profile</string>
+    <string name="paused_profile_label">%1$s · paused</string>
     <string name="open_alarms_action">Open alarms</string>
     <string name="open_calendar_action">Open calendar</string>
 
@@ -44,6 +48,8 @@
     <string name="status_opening">Opening %1$s</string>
     <string name="status_auto_opened">Auto-opened %1$s</string>
     <string name="status_cant_open">Can\'t open %1$s</string>
+    <string name="status_profile_paused">Work apps are paused. Turn them on to open %1$s.</string>
+    <string name="status_resuming_profile">Turning work apps back on for %1$s</string>
     <string name="status_cant_show_app_info">Can\'t show app info for %1$s</string>
     <string name="status_cant_open_alarms">Can\'t open alarms</string>
     <string name="status_cant_open_calendar">Can\'t open calendar</string>

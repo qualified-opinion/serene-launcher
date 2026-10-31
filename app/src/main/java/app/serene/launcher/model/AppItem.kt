@@ -23,6 +23,9 @@ enum class FallbackIconGlyph {
     WEATHER
 }
 
+/** Which kind of Android profile an app lives in. Only [PERSONAL] apps have ids without a serial. */
+enum class ProfileKind { PERSONAL, WORK, PRIVATE, CLONE, OTHER }
+
 data class AppItem(
     val id: String,
     val label: String,
@@ -32,11 +35,17 @@ data class AppItem(
     val isPinned: Boolean = false,
     /** Serial number of the Android user profile the app belongs to (personal, work, ...). */
     val profileSerial: Long = 0L,
-    val isWorkProfile: Boolean = false,
+    val profileKind: ProfileKind = ProfileKind.PERSONAL,
+    /** The profile is switched off (work apps paused); launching asks Android to turn it back on. */
+    val isProfilePaused: Boolean = false,
     val isHidden: Boolean = false,
     /** The app's own name when the user renamed it, so it can be shown and restored. */
     val originalLabel: String? = null
 ) {
+    /** True for every profile other than the personal one, so the id carries the profile serial. */
+    val isWorkProfile: Boolean
+        get() = profileKind != ProfileKind.PERSONAL
+
     val firstLetterSection: Char
         get() = AppSearch.sectionOf(label)
 }

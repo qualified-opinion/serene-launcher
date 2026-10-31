@@ -1,22 +1,31 @@
 package app.serene.launcher.data
 
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.LauncherApps
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
+import android.util.Log
+import androidx.core.content.ContextCompat
 import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.FallbackIconGlyph
+import app.serene.launcher.model.ProfileKind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Lists launchable apps through [LauncherApps], which covers every profile on the device
@@ -29,17 +38,31 @@ class InstalledAppsRepository(
     private val launcherApps = context.getSystemService(LauncherApps::class.java)
     private val userManager = context.getSystemService(UserManager::class.java)
 
+    /** The last apps read from each profile, by serial, for when Android refuses to list one. */
+    private val lastAppsByProfile = ConcurrentHashMap<Long, List<AppItem>>()
+
     override suspend fun loadInstalledApps(): List<AppItem> = withContext(Dispatchers.IO) {
         val ownPackage = context.packageName
         val myUser = Process.myUserHandle()
 
         userManager.userProfiles.flatMap { user ->
             val serial = userManager.getSerialNumberForUser(user)
-            val isWork = user != myUser
+            val isPersonal = user == myUser
+            val kind = if (isPersonal) ProfileKind.PERSONAL else profileKind(user)
+            val isPaused = !isPersonal && isQuietModeEnabled(user)
+            // A locked private space must not reveal its apps anywhere.
+            if (kind == ProfileKind.PRIVATE && isPaused) return@flatMap emptyList()
+
             val activities = try {
                 launcherApps.getActivityList(null, user)
             } catch (_: SecurityException) {
-                emptyList()
+                // Don't let a refused read look like an empty profile: keep showing what was there.
+                Log.w(TAG, "Not allowed to list apps in profile $serial; keeping the last list")
+                return@flatMap lastAppsByProfile[serial].orEmpty().map { it.copy(isProfilePaused = isPaused) }
+            }
+            // Some phones list nothing for a paused profile; show its apps as paused instead.
+            if (isPaused && activities.isEmpty()) {
+                return@flatMap lastAppsByProfile[serial].orEmpty().map { it.copy(isProfilePaused = true) }
             }
             activities
                 .filterNot { it.componentName.packageName == ownPackage }
@@ -48,19 +71,52 @@ class InstalledAppsRepository(
                     val label = info.label?.toString()?.trim().takeUnless { it.isNullOrBlank() }
                         ?: component.packageName.substringAfterLast('.')
                     AppItem(
-                        id = appId(component, serial, isWork),
+                        id = appId(component, serial, !isPersonal),
                         label = label,
                         packageName = component.packageName,
                         activityName = component.className,
                         fallbackGlyph = inferFallbackGlyph(label),
                         profileSerial = serial,
-                        isWorkProfile = isWork
+                        profileKind = kind,
+                        isProfilePaused = isPaused
                     )
                 }
+                .also { lastAppsByProfile[serial] = it }
         }
             .distinctBy { it.id }
             .let { AppSearch.sort(it) }
     }
+
+    override fun profileSerials(): Set<Long>? {
+        val hiddenProfilesVisible = Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM ||
+            context.checkSelfPermission(ACCESS_HIDDEN_PROFILES) == PackageManager.PERMISSION_GRANTED
+        if (!hiddenProfilesVisible) return null
+        return userManager.userProfiles.map { userManager.getSerialNumberForUser(it) }.toSet()
+    }
+
+    /** Android 15 says which kind a profile is; before that, every extra profile is treated as work. */
+    private fun profileKind(user: UserHandle): ProfileKind {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return ProfileKind.WORK
+        val userType = try {
+            launcherApps.getLauncherUserInfo(user)?.userType
+        } catch (_: SecurityException) {
+            null
+        }
+        return when (userType) {
+            USER_TYPE_MANAGED -> ProfileKind.WORK
+            USER_TYPE_PRIVATE -> ProfileKind.PRIVATE
+            USER_TYPE_CLONE -> ProfileKind.CLONE
+            null -> ProfileKind.WORK
+            else -> ProfileKind.OTHER
+        }
+    }
+
+    private fun isQuietModeEnabled(user: UserHandle): Boolean =
+        try {
+            userManager.isQuietModeEnabled(user)
+        } catch (_: SecurityException) {
+            false
+        }
 
     override fun appChanges(): Flow<AppChange> = callbackFlow {
         val callback = object : LauncherApps.Callback() {
@@ -86,7 +142,20 @@ class InstalledAppsRepository(
             }
         }
         launcherApps.registerCallback(callback, Handler(Looper.getMainLooper()))
-        awaitClose { launcherApps.unregisterCallback(callback) }
+
+        // Profiles being added, removed, paused or resumed don't reach LauncherApps.Callback.
+        val profileReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                trySend(AppChange.Refresh)
+            }
+        }
+        val profileFilter = IntentFilter().apply { PROFILE_ACTIONS.forEach(::addAction) }
+        ContextCompat.registerReceiver(context, profileReceiver, profileFilter, ContextCompat.RECEIVER_NOT_EXPORTED)
+
+        awaitClose {
+            launcherApps.unregisterCallback(callback)
+            context.unregisterReceiver(profileReceiver)
+        }
     }
 
     /**
@@ -111,7 +180,14 @@ class InstalledAppsRepository(
     }
 
     override fun launchApp(app: AppItem): Result<Unit> = runCatching {
-        launcherApps.startMainActivity(app.componentName(), app.userHandle(), null, null)
+        val user = app.userHandle()
+        if (app.isWorkProfile && isQuietModeEnabled(user)) {
+            // The default launcher may ask Android to resume the profile; Android shows any unlock screen.
+            val resumeRequested = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
+                runCatching { userManager.requestQuietModeEnabled(false, user) }.isSuccess
+            throw ProfilePausedException(resumeRequested)
+        }
+        launcherApps.startMainActivity(app.componentName(), user, null, null)
     }
 
     override fun openAppInfo(app: AppItem): Result<Unit> = runCatching {
@@ -131,6 +207,27 @@ class InstalledAppsRepository(
     private fun appId(component: ComponentName, serial: Long, isWork: Boolean): String {
         val base = "${component.packageName}/${component.className}"
         return if (isWork) "$base@$serial" else base
+    }
+
+    private companion object {
+        const val TAG = "InstalledApps"
+        const val ACCESS_HIDDEN_PROFILES = "android.permission.ACCESS_HIDDEN_PROFILES"
+        const val USER_TYPE_MANAGED = "android.os.usertype.profile.MANAGED"
+        const val USER_TYPE_PRIVATE = "android.os.usertype.profile.PRIVATE"
+        const val USER_TYPE_CLONE = "android.os.usertype.profile.CLONE"
+
+        val PROFILE_ACTIONS = listOf(
+            Intent.ACTION_MANAGED_PROFILE_ADDED,
+            Intent.ACTION_MANAGED_PROFILE_REMOVED,
+            Intent.ACTION_MANAGED_PROFILE_AVAILABLE,
+            Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE,
+            Intent.ACTION_MANAGED_PROFILE_UNLOCKED,
+            // Android 15+ sends these for every kind of profile, including private space.
+            "android.intent.action.PROFILE_ADDED",
+            "android.intent.action.PROFILE_REMOVED",
+            "android.intent.action.PROFILE_AVAILABLE",
+            "android.intent.action.PROFILE_UNAVAILABLE"
+        )
     }
 
     private fun inferFallbackGlyph(label: String): FallbackIconGlyph {
