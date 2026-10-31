@@ -77,21 +77,49 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/serene-release.jks"
 
+      - name: Take the release notes from the changelog
+        id: notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Use the CHANGELOG.md section headed "## [VERSION]" (or the version without its
+          # pre-release suffix). Without one, GitHub generates notes from the merged PRs.
+          notes="$RUNNER_TEMP/release-notes.md"
+          for v in "$VERSION" "${VERSION%%-*}"; do
+            awk -v head="## [$v]" '
+              index($0, head) == 1 { found = 1; next }
+              found && /^## / { exit }
+              found { print }
+            ' CHANGELOG.md > "$notes"
+            if grep -q '[^[:space:]]' "$notes"; then
+              echo "file=$notes" >> "$GITHUB_OUTPUT"
+              echo "Using the CHANGELOG.md section for $v"
+              exit 0
+            fi
+          done
+          echo "No CHANGELOG.md section for $VERSION; GitHub will generate the notes."
+
       - name: Publish the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
           PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          NOTES_FILE: ${{ steps.notes.outputs.file }}
         run: |
           name="serene-launcher-$VERSION.apk"
           cp app/build/outputs/apk/release/app-release.apk "$name"
           sha256sum "$name" > "$name.sha256"
           flags=()
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          if [ -n "$NOTES_FILE" ]; then flags+=(--notes-file "$NOTES_FILE"); else flags+=(--generate-notes); fi
           # A release drafted on GitHub's website already exists for the tag; add the files to it.
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "$name" "$name.sha256" --clobber
+            # Fill in the notes from the changelog only if the owner left them empty.
+            if [ -n "$NOTES_FILE" ] && [ -z "$(gh release view "$GITHUB_REF_NAME" --json body --jq .body)" ]; then
+              gh release edit "$GITHUB_REF_NAME" --notes-file "$NOTES_FILE"
+            fi
           else
             gh release create "$GITHUB_REF_NAME" "$name" "$name.sha256" \
-              --title "Serene Launcher $VERSION" --generate-notes --verify-tag "${flags[@]}"
+              --title "Serene Launcher $VERSION" --verify-tag "${flags[@]}"
           fi
