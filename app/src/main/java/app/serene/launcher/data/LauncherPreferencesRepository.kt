@@ -211,6 +211,39 @@ class LauncherPreferencesRepository(
         }
     }
 
+    /**
+     * Swaps saved app ids for new ones in pins, hidden apps and custom names. [replacements] gets
+     * every saved id and returns old id to new id. Pins keep their place on Home. If the new id was
+     * already saved, it is kept once, and a name already given to it wins over the old one.
+     * No key is renamed or dropped: only the ids inside them change.
+     */
+    suspend fun replaceAppIds(replacements: (storedIds: Set<String>) -> Map<String, String>) {
+        dataStore.edit { prefs ->
+            val pinIds = prefs[KEY_PINNED_APP_IDS].orEmpty()
+            val hidden = prefs[KEY_HIDDEN_APP_IDS].orEmpty()
+            val labels = decodeLabels(prefs[KEY_CUSTOM_APP_LABELS])
+            val map = replacements(pinIds + hidden + labels.keys)
+            if (map.isEmpty()) return@edit
+            fun swap(id: String) = map[id] ?: id
+
+            if (pinIds.any { it in map }) {
+                if (prefs[KEY_PINNED_APP_ORDER] == null) {
+                    // Old installs with no saved order sort pins by name, so only the set changes.
+                    prefs[KEY_PINNED_APP_IDS] = pinIds.map(::swap).toSet()
+                } else {
+                    prefs.writePins(pinOrder(prefs, emptyList()).map(::swap).distinct())
+                }
+            }
+            if (hidden.any { it in map }) {
+                prefs[KEY_HIDDEN_APP_IDS] = hidden.map(::swap).toSet()
+            }
+            if (labels.keys.any { it in map }) {
+                val moved = labels.filterKeys { it in map }.mapKeys { (id, _) -> swap(id) }
+                prefs[KEY_CUSTOM_APP_LABELS] = encodeLabels(moved + labels.filterKeys { it !in map })
+            }
+        }
+    }
+
     suspend fun setHidden(appId: String, hidden: Boolean) {
         dataStore.edit { prefs ->
             val current = prefs[KEY_HIDDEN_APP_IDS] ?: emptySet()

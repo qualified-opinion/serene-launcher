@@ -1,6 +1,8 @@
 package app.serene.launcher.data
 
+import app.serene.launcher.domain.ProfileApps
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.ProfileScan
 import kotlinx.coroutines.flow.Flow
 
 sealed interface AppChange {
@@ -11,9 +13,19 @@ sealed interface AppChange {
 
 /** Source of launchable apps and the actions the launcher performs on them. */
 interface AppsRepository {
-    suspend fun loadInstalledApps(): List<AppItem>
+    /** Lists every profile on the phone with its apps and whether the list could be read. */
+    suspend fun scanProfiles(): List<ProfileScan>
 
-    /** Emits whenever apps are installed, removed, updated, enabled or disabled in any profile. */
+    /** All launchable apps from one scan, with no earlier scan to fill in paused profiles. */
+    suspend fun loadInstalledApps(): List<AppItem> = ProfileApps.merge(emptyList(), scanProfiles())
+
+    /** True if Android still knows a profile with this serial number, even one the scan skipped. */
+    fun profileExists(serial: Long): Boolean
+
+    /**
+     * Emits whenever apps are installed, removed, updated, enabled or disabled in any profile,
+     * and when a profile is added, removed, paused, resumed or unlocked.
+     */
     fun appChanges(): Flow<AppChange>
 
     fun selectInitialPinnedIds(allApps: List<AppItem>): Set<String>

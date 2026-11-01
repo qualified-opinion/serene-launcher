@@ -10,6 +10,9 @@
         </intent>
     </queries>
 
+    <!-- Android 15+: lets the default home app list private space. It is not a network permission. -->
+    <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
+
     <!-- Backup is off on every API level, so API 24-30 needs no fullBackupContent. -->
     <application
         android:allowBackup="false"

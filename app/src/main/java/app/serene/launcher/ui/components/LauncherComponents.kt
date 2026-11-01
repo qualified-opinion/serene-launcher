@@ -101,6 +101,7 @@ import app.serene.launcher.R
 import app.serene.launcher.data.AppIconLoader
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.FallbackIconGlyph
+import app.serene.launcher.model.ProfileKind
 
 @Composable
 fun MinimalClockDateHeader(
@@ -263,17 +264,28 @@ fun PinnedAppRow(
             modifier = Modifier.weight(1f, fill = false)
         )
 
-        if (app.isWorkProfile) {
-            WorkProfileLabel(modifier = Modifier.padding(start = 10.dp))
+        if (!app.isPersonalProfile) {
+            ProfileLabel(app = app, modifier = Modifier.padding(start = 10.dp))
         }
     }
 }
 
-/** Small "Work" tag so work-profile apps can be told apart from personal ones in text mode. */
+/**
+ * Small tag ("Work", "Private", ...) so apps in other profiles can be told apart from personal
+ * ones in text mode. It says when the profile is paused.
+ */
 @Composable
-private fun WorkProfileLabel(modifier: Modifier = Modifier) {
+private fun ProfileLabel(app: AppItem, modifier: Modifier = Modifier) {
+    val profileName = stringResource(
+        when (app.profileKind) {
+            ProfileKind.WORK -> R.string.work_profile_label
+            ProfileKind.PRIVATE -> R.string.private_profile_label
+            ProfileKind.CLONE -> R.string.clone_profile_label
+            else -> R.string.other_profile_label
+        }
+    )
     Text(
-        text = stringResource(R.string.work_profile_label),
+        text = if (app.isProfilePaused) stringResource(R.string.profile_paused_label, profileName) else profileName,
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
@@ -333,8 +345,8 @@ fun DrawerAppRow(
                 modifier = Modifier.weight(1f, fill = false)
             )
 
-            if (app.isWorkProfile) {
-                WorkProfileLabel(modifier = Modifier.padding(start = 10.dp))
+            if (!app.isPersonalProfile) {
+                ProfileLabel(app = app, modifier = Modifier.padding(start = 10.dp))
             }
 
             if (app.isPinned) {

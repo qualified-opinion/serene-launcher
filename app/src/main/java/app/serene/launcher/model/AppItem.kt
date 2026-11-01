@@ -32,13 +32,19 @@ data class AppItem(
     val isPinned: Boolean = false,
     /** Serial number of the Android user profile the app belongs to (personal, work, ...). */
     val profileSerial: Long = 0L,
-    val isWorkProfile: Boolean = false,
+    val profileKind: ProfileKind = ProfileKind.PERSONAL,
+    /** True while the app's profile is paused, so a tap asks Android to turn the profile back on. */
+    val isProfilePaused: Boolean = false,
     val isHidden: Boolean = false,
     /** The app's own name when the user renamed it, so it can be shown and restored. */
     val originalLabel: String? = null
 ) {
     val firstLetterSection: Char
         get() = AppSearch.sectionOf(label)
+
+    /** True for apps in the main (personal) profile, whose ids have no `@serial` suffix. */
+    val isPersonalProfile: Boolean
+        get() = profileKind == ProfileKind.PERSONAL
 }
 
 data class LauncherUiState(
