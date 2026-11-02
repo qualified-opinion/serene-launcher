@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
@@ -166,7 +167,8 @@ class MainFlowsTest {
         fun pinnedTag(app: AppItem) = "pinned_app_row_${app.id}"
 
         val isDrawerRow = SemanticsMatcher("is an app row in the drawer") { node ->
-            node.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("drawer_app_row_") == true
+            SemanticsProperties.TestTag in node.config &&
+                node.config[SemanticsProperties.TestTag].startsWith("drawer_app_row_")
         }
     }
 }
