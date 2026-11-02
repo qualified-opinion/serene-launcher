@@ -23,6 +23,8 @@ Use JDK 21, because Robolectric needs it for API 36. CI (`.github/workflows/buil
 
 Add a unit test for every logic change.
 
+A separate **UI tests** workflow (`.github/workflows/ui-tests.yml`) runs `connectedDebugAndroidTest` on an Android 14 emulator. The tests are in `app/src/androidTest` and cover the main flows: opening the drawer, search, pinning and Back.
+
 ## Process
 1. Take the next batch in the ROADMAP status table and read its pack in `docs/plan/handoffs/`.
 2. Work on a feature branch from the latest `main`, open one PR and keep CI green.
