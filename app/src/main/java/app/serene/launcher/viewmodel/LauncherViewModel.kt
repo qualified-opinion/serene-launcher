@@ -8,10 +8,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import app.serene.launcher.R
 import app.serene.launcher.data.AppChange
+import app.serene.launcher.data.AndroidSystemActions
 import app.serene.launcher.data.AppsRepository
 import app.serene.launcher.data.InstalledAppsRepository
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.data.LauncherUserPreferences
+import app.serene.launcher.data.LockResult
+import app.serene.launcher.data.NoSystemActions
+import app.serene.launcher.data.SystemActions
 import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.domain.ProfileApps
 import app.serene.launcher.model.AppItem
@@ -31,7 +35,8 @@ import kotlinx.coroutines.launch
 
 class LauncherViewModel(
     private val installedAppsRepository: AppsRepository,
-    private val preferencesRepository: LauncherPreferencesRepository
+    private val preferencesRepository: LauncherPreferencesRepository,
+    private val systemActions: SystemActions = NoSystemActions
 ) : ViewModel() {
 
     private val _rawInstalledApps = MutableStateFlow<List<AppItem>>(emptyList())
@@ -150,6 +155,8 @@ class LauncherViewModel(
             showAppIcons = prefs.showAppIcons,
             autoLaunchSingleMatch = prefs.autoLaunchSingleMatch,
             openKeyboardOnDrawer = prefs.openKeyboardOnDrawer,
+            swipeDownForNotifications = prefs.swipeDownForNotifications,
+            doubleTapToLock = prefs.doubleTapToLock,
             selectedAppForMenu = selectedApp,
             statusMessage = statusMessage
         )
@@ -384,6 +391,35 @@ class LauncherViewModel(
         viewModelScope.launch { savePreferences { preferencesRepository.setAutoLaunchSingleMatch(autoLaunch) } }
     }
 
+    fun setSwipeDownForNotifications(enabled: Boolean) {
+        viewModelScope.launch { savePreferences { preferencesRepository.setSwipeDownForNotifications(enabled) } }
+    }
+
+    fun setDoubleTapToLock(enabled: Boolean) {
+        viewModelScope.launch { savePreferences { preferencesRepository.setDoubleTapToLock(enabled) } }
+    }
+
+    /** True while Serene's accessibility service is on, so Settings can say whether locking works. */
+    val isLockServiceOn: Boolean get() = systemActions.isLockServiceOn
+
+    /** A swipe down on empty Home space. */
+    fun onHomeSwipeDown() {
+        if (!_uiState.value.swipeDownForNotifications) return
+        if (!systemActions.openNotifications()) {
+            showTransientMessage(StatusMessage(R.string.status_cant_open_notifications))
+        }
+    }
+
+    /** A double-tap on empty Home space. */
+    fun onHomeDoubleTap() {
+        if (!_uiState.value.doubleTapToLock) return
+        when (systemActions.lockScreen()) {
+            LockResult.LOCKED -> Unit
+            LockResult.NEEDS_SERVICE -> showTransientMessage(StatusMessage(R.string.status_lock_needs_service))
+            LockResult.NOT_SUPPORTED -> showTransientMessage(StatusMessage(R.string.status_lock_not_supported))
+        }
+    }
+
     fun setOpenKeyboardOnDrawer(open: Boolean) {
         viewModelScope.launch { savePreferences { preferencesRepository.setOpenKeyboardOnDrawer(open) } }
     }
@@ -404,13 +440,15 @@ class LauncherViewModel(
     class Factory(
         private val application: Application,
         private val installedAppsRepository: AppsRepository = InstalledAppsRepository(application),
-        private val preferencesRepository: LauncherPreferencesRepository = LauncherPreferencesRepository(application)
+        private val preferencesRepository: LauncherPreferencesRepository = LauncherPreferencesRepository(application),
+        private val systemActions: SystemActions = AndroidSystemActions(application)
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return LauncherViewModel(
                 installedAppsRepository = installedAppsRepository,
-                preferencesRepository = preferencesRepository
+                preferencesRepository = preferencesRepository,
+                systemActions = systemActions
             ) as T
         }
     }

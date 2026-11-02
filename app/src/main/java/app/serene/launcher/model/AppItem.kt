@@ -64,6 +64,8 @@ data class LauncherUiState(
     val showAppIcons: Boolean = false,
     val autoLaunchSingleMatch: Boolean = true,
     val openKeyboardOnDrawer: Boolean = false,
+    val swipeDownForNotifications: Boolean = true,
+    val doubleTapToLock: Boolean = false,
     val selectedAppForMenu: AppItem? = null,
     /** The long-press menu's app's own shortcuts, empty until they have loaded. */
     val appShortcuts: List<AppShortcut> = emptyList(),

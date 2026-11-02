@@ -85,4 +85,18 @@
     <string name="settings_auto_open">Open an app when only one matches</string>
     <string name="settings_auto_open_summary">Typing the start of a name opens the app as soon as no other app matches</string>
     <string name="settings_open_keyboard">Open the keyboard when the drawer opens</string>
+    <string name="settings_section_gestures">GESTURES</string>
+    <string name="settings_swipe_down">Swipe down for notifications</string>
+    <string name="settings_double_tap_lock">Double-tap to lock the screen</string>
+    <string name="settings_double_tap_lock_summary">Double-tap empty space on Home</string>
+    <string name="settings_double_tap_lock_needs_service">Turn on Serene in Accessibility settings to use this</string>
+    <string name="settings_double_tap_lock_old_android">Needs Android 9 or later</string>
+    <string name="lock_service_title">Let Serene lock the screen?</string>
+    <string name="lock_service_message">Android only lets an app lock the screen through an accessibility service. Serene's service does one thing: it presses the lock button (or opens notifications) when you use the gesture. It can't read your screen or what you type, and it has no internet access. On the next screen, tap Serene Launcher and turn it on. You can turn it off there at any time.</string>
+    <string name="lock_service_open_settings">Open Accessibility settings</string>
+    <string name="lock_service_not_now">Not now</string>
+    <string name="accessibility_service_description">Lets Serene Launcher lock the screen when you double-tap Home, and open notifications when you swipe down. It can't read your screen or what you type.</string>
+    <string name="status_lock_needs_service">To lock with a double-tap, turn on Serene in Accessibility settings</string>
+    <string name="status_lock_not_supported">Locking the screen needs Android 9 or later</string>
+    <string name="status_cant_open_notifications">Can't open notifications. Turn on Serene in Accessibility settings.</string>
 </resources>

@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -53,7 +54,7 @@ import app.serene.launcher.model.AppItem
 import app.serene.launcher.ui.components.MinimalClockDateHeader
 import app.serene.launcher.ui.components.PinnedAppRow
 
-/** How far an upward swipe on Home must travel before it opens the app drawer. */
+/** How far a swipe up (app drawer) or down (notifications) on Home must travel to count. */
 private val OpenDrawerSwipeThreshold = 48.dp
 
 @Composable
@@ -71,7 +72,10 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     isReorderingPins: Boolean = false,
     onMovePin: (AppItem, Int) -> Unit = { _, _ -> },
-    onDoneReordering: () -> Unit = {}
+    onDoneReordering: () -> Unit = {},
+    onSwipeDown: () -> Unit = {},
+    /** Null when double-tap is off, so single taps on Home aren't held back waiting for a second. */
+    onDoubleTap: (() -> Unit)? = null
 ) {
     // Home is the bottom of the back stack: swallow Back so the system doesn't
     // finish the launcher and immediately restart it.
@@ -89,6 +93,8 @@ fun HomeScreen(
                     onDragEnd = {
                         if (cumulativeUpwardDrag < -openDrawerThresholdPx) {
                             onOpenDrawer()
+                        } else if (cumulativeUpwardDrag > openDrawerThresholdPx) {
+                            onSwipeDown()
                         }
                         cumulativeUpwardDrag = 0f
                     },
@@ -99,8 +105,11 @@ fun HomeScreen(
                 )
             }
             // Long-pressing empty space opens Settings; app rows handle their own long-press.
-            .pointerInput(Unit) {
-                detectTapGestures(onLongPress = { onOpenSettings() })
+            .pointerInput(onDoubleTap) {
+                detectTapGestures(
+                    onLongPress = { onOpenSettings() },
+                    onDoubleTap = onDoubleTap?.let { action -> { _: Offset -> action() } }
+                )
             }
             .testTag("home_screen"),
         contentAlignment = Alignment.TopCenter
