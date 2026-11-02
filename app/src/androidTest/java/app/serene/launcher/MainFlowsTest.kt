@@ -1,6 +1,7 @@
 package app.serene.launcher
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
@@ -10,6 +11,7 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
@@ -104,8 +106,12 @@ class MainFlowsTest {
 
         compose.onNodeWithTag(rowTag(settingsApp)).performTouchInput { longClick() }
         waitForTag(ACTION_SHEET)
-        compose.onNodeWithTag(SHEET_PIN_BUTTON).performClick()
+        // The sheet slides up, so a tap at the button's position could land on the dimmed
+        // background behind it and dismiss the sheet. Run the button's click action instead.
+        compose.onNodeWithTag(SHEET_PIN_BUTTON).performSemanticsAction(SemanticsActions.OnClick)
         waitForTagGone(ACTION_SHEET)
+        // The drawer marks pinned apps with a dot.
+        waitForTag(pinnedDotTag(settingsApp))
 
         compose.onNodeWithTag(CLOSE_DRAWER_BUTTON).performClick()
         waitForTag(HOME)
@@ -142,12 +148,13 @@ class MainFlowsTest {
 
     private fun drawerRowCount() = compose.onAllNodes(isDrawerRow).fetchSemanticsNodes().size
 
+    // The unmerged tree also holds tags on parts of a row, such as the pinned dot.
     private fun waitForTag(tag: String) = compose.waitUntil(TIMEOUT_MS) {
-        compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+        compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
     }
 
     private fun waitForTagGone(tag: String) = compose.waitUntil(TIMEOUT_MS) {
-        compose.onAllNodesWithTag(tag).fetchSemanticsNodes().isEmpty()
+        compose.onAllNodesWithTag(tag, useUnmergedTree = true).fetchSemanticsNodes().isEmpty()
     }
 
     private companion object {
@@ -165,6 +172,7 @@ class MainFlowsTest {
 
         fun rowTag(app: AppItem) = "drawer_app_row_${app.id}"
         fun pinnedTag(app: AppItem) = "pinned_app_row_${app.id}"
+        fun pinnedDotTag(app: AppItem) = "pinned_dot_${app.id}"
 
         val isDrawerRow = SemanticsMatcher("is an app row in the drawer") { node ->
             SemanticsProperties.TestTag in node.config &&
