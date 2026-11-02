@@ -218,7 +218,9 @@ fun SereneLauncherRoot(
                     onAppInfo = { viewModel.openAppInfo(selectedApp) },
                     onReorderPins = viewModel::startReorderingPins,
                     onRename = { viewModel.startRenaming(selectedApp) },
-                    onHide = { viewModel.hideApp(selectedApp) }
+                    onHide = { viewModel.hideApp(selectedApp) },
+                    shortcuts = uiState.appShortcuts,
+                    onShortcutClick = viewModel::startShortcut
                 )
             }
 

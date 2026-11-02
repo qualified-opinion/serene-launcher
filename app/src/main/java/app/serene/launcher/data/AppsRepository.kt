@@ -2,6 +2,7 @@ package app.serene.launcher.data
 
 import app.serene.launcher.domain.ProfileApps
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.ProfileScan
 import kotlinx.coroutines.flow.Flow
 
@@ -34,4 +35,13 @@ interface AppsRepository {
     fun launchApp(app: AppItem): Result<Unit>
 
     fun openAppInfo(app: AppItem): Result<Unit>
+
+    /**
+     * The app's own shortcuts for its long-press menu. Empty when it has none, when Serene isn't
+     * the default home app (Android only shares shortcuts with that app) or on Android 7.0.
+     */
+    suspend fun shortcutsFor(app: AppItem): List<AppShortcut>
+
+    /** Opens one of an app's shortcuts. Fails if the app removed it or its profile is paused. */
+    fun startShortcut(shortcut: AppShortcut): Result<Unit>
 }

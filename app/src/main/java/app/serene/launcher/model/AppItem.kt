@@ -65,6 +65,8 @@ data class LauncherUiState(
     val autoLaunchSingleMatch: Boolean = true,
     val openKeyboardOnDrawer: Boolean = false,
     val selectedAppForMenu: AppItem? = null,
+    /** The long-press menu's app's own shortcuts, empty until they have loaded. */
+    val appShortcuts: List<AppShortcut> = emptyList(),
     val appBeingRenamed: AppItem? = null,
     val statusMessage: StatusMessage? = null
 )

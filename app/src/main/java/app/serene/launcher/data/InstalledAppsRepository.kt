@@ -13,9 +13,13 @@ import android.os.Looper
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import app.serene.launcher.domain.AppShortcuts
 import app.serene.launcher.domain.ProfileApps
+import app.serene.launcher.domain.ShortcutEntry
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.FallbackIconGlyph
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.ProfileScan
@@ -187,6 +191,53 @@ class InstalledAppsRepository(
 
     override fun openAppInfo(app: AppItem): Result<Unit> = runCatching {
         launcherApps.startAppDetailsActivity(app.componentName(), app.userHandle(), null, null)
+    }
+
+    override suspend fun shortcutsFor(app: AppItem): List<AppShortcut> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return emptyList()
+        return withContext(Dispatchers.IO) { loadShortcuts(app) }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N_MR1)
+    private fun loadShortcuts(app: AppItem): List<AppShortcut> {
+        val activity = app.activityName ?: return emptyList()
+        val user = userManager.getUserForSerialNumber(app.profileSerial) ?: return emptyList()
+        // Only the default home app may read other apps' shortcuts. Anything else gets none.
+        if (!runCatching { launcherApps.hasShortcutHostPermission() }.getOrDefault(false)) return emptyList()
+        val query = LauncherApps.ShortcutQuery()
+            .setPackage(app.packageName)
+            .setActivity(ComponentName(app.packageName, activity))
+            .setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST)
+        // A paused or locked profile, or an app that was just removed, can make this throw.
+        val infos = runCatching { launcherApps.getShortcuts(query, user) }.getOrNull().orEmpty()
+        return AppShortcuts.forMenu(
+            app,
+            infos.map { info ->
+                ShortcutEntry(
+                    id = info.id,
+                    shortLabel = info.shortLabel?.toString(),
+                    longLabel = info.longLabel?.toString(),
+                    rank = info.rank,
+                    isEnabled = info.isEnabled,
+                    isDeclaredInManifest = info.isDeclaredInManifest
+                )
+            }
+        )
+    }
+
+    override fun startShortcut(shortcut: AppShortcut): Result<Unit> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) {
+            return Result.failure(UnsupportedOperationException("Shortcuts need Android 7.1"))
+        }
+        return runCatching { startShortcutNow(shortcut) }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N_MR1)
+    private fun startShortcutNow(shortcut: AppShortcut) {
+        val user = requireNotNull(userManager.getUserForSerialNumber(shortcut.profileSerial)) {
+            "Profile for ${shortcut.label} is gone"
+        }
+        launcherApps.startShortcut(shortcut.packageName, shortcut.id, null, null, user)
     }
 
     private fun AppItem.componentName(): ComponentName =

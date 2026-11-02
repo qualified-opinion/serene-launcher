@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import app.serene.launcher.R
 import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.LauncherPreferencesRepository
+import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.ProfileState
 import app.serene.launcher.model.StatusMessage
@@ -515,5 +516,57 @@ class LauncherViewModelTest {
         try {
             assertEquals(listOf(oldWorkMail), preferences.preferencesFlow.first().pinnedAppOrder)
         } finally { viewModel.viewModelScope.cancel() }
+    }
+
+    @Test
+    fun `long-pressing an app shows its shortcuts and tapping one opens it and closes the menu`() = runTest(dispatcher) {
+        val newPhoto = AppShortcut("new_photo", camera.packageName, "New photo", profileSerial = 0)
+        appsRepository.shortcuts[camera.id] = listOf(newPhoto)
+        val viewModel = loadedViewModel()
+        viewModel.openDrawer()
+        viewModel.onAppLongPress(camera)
+        advanceUntilIdle()
+        assertEquals(listOf(newPhoto), viewModel.uiState.value.appShortcuts)
+
+        viewModel.startShortcut(newPhoto)
+        runCurrent()
+
+        val state = viewModel.uiState.value
+        assertEquals(listOf(newPhoto), appsRepository.startedShortcuts)
+        assertNull(state.selectedAppForMenu)
+        assertFalse(state.isDrawerOpen)
+        assertEquals(StatusMessage(R.string.status_opening, listOf("New photo")), state.statusMessage)
+    }
+
+    @Test
+    fun `the menu never shows the shortcuts of the app pressed before`() = runTest(dispatcher) {
+        appsRepository.shortcuts[camera.id] = listOf(AppShortcut("new_photo", camera.packageName, "New photo", 0))
+        val viewModel = loadedViewModel()
+        viewModel.onAppLongPress(camera)
+        advanceUntilIdle()
+        viewModel.dismissAppMenu()
+
+        viewModel.onAppLongPress(maps)
+        advanceUntilIdle()
+
+        assertEquals(maps.id, viewModel.uiState.value.selectedAppForMenu?.id)
+        assertTrue(viewModel.uiState.value.appShortcuts.isEmpty())
+    }
+
+    @Test
+    fun `a shortcut that fails to open keeps the drawer open and says so`() = runTest(dispatcher) {
+        val newPhoto = AppShortcut("new_photo", camera.packageName, "New photo", 0)
+        appsRepository.shortcuts[camera.id] = listOf(newPhoto)
+        val viewModel = loadedViewModel()
+        viewModel.openDrawer()
+        viewModel.onAppLongPress(camera)
+        advanceUntilIdle()
+        appsRepository.failLaunches = true
+
+        viewModel.startShortcut(newPhoto)
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value.isDrawerOpen)
+        assertEquals(StatusMessage(R.string.status_cant_open, listOf("New photo")), viewModel.uiState.value.statusMessage)
     }
 }
