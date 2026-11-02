@@ -1,7 +1,6 @@
 package app.serene.launcher
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
@@ -11,7 +10,6 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
@@ -54,6 +52,9 @@ class MainFlowsTest {
         // Start every test from the same settings: Settings not pinned, hidden or renamed, and no
         // auto-open, which would leave the launcher as soon as the search matched one app.
         LauncherPreferencesRepository(context).apply {
+            // Mark the first-run pins as done, or the launcher would pin Settings by default
+            // when it starts, after the line below has unpinned it.
+            initializeDefaultPinsIfNeeded(setOf(settingsApp.id))
             setPinState(settingsApp.id, pinned = false)
             setHidden(settingsApp.id, hidden = false)
             setCustomLabel(settingsApp.id, null)
@@ -106,9 +107,7 @@ class MainFlowsTest {
 
         compose.onNodeWithTag(rowTag(settingsApp)).performTouchInput { longClick() }
         waitForTag(ACTION_SHEET)
-        // The sheet slides up, so a tap at the button's position could land on the dimmed
-        // background behind it and dismiss the sheet. Run the button's click action instead.
-        compose.onNodeWithTag(SHEET_PIN_BUTTON).performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithTag(SHEET_PIN_BUTTON).performClick()
         waitForTagGone(ACTION_SHEET)
         // The drawer marks pinned apps with a dot.
         waitForTag(pinnedDotTag(settingsApp))
