@@ -7,11 +7,14 @@ import androidx.lifecycle.viewModelScope
 import app.serene.launcher.R
 import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.LauncherPreferencesRepository
+import app.serene.launcher.model.ProfileKind
+import app.serene.launcher.model.ProfileState
 import app.serene.launcher.model.StatusMessage
 import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.FakeAppsRepository
 import app.serene.launcher.testing.InMemoryPreferencesDataStore
 import app.serene.launcher.testing.app
+import app.serene.launcher.testing.inProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -190,7 +193,7 @@ class LauncherViewModelTest {
 
     @Test
     fun `restored pins survive empty and paused scans and appear in order when apps return`() = runTest(dispatcher) {
-        val work = app("Work", "pkg/Main@10").copy(profileSerial = 10, isWorkProfile = true)
+        val work = app("Work", "pkg/Main@10").copy(profileSerial = 10, profileKind = ProfileKind.WORK)
         val ordered = listOf(work, maps, camera)
         ordered.forEach { preferences.setPinState(it.id, true) }
         appsRepository.apps = emptyList()
@@ -432,5 +435,85 @@ class LauncherViewModelTest {
 
         assertNull(viewModel.uiState.value.appBeingRenamed)
         assertEquals(listOf("Calendar", "Camera", "Maps"), viewModel.uiState.value.allApps.map { it.label })
+    }
+
+    @Test
+    fun `a paused work profile keeps its pinned apps and says so when one is tapped`() = runTest(dispatcher) {
+        val workMail = inProfile(app("Mail"), serial = 10)
+        appsRepository.apps = listOf(calendar, camera, maps, workMail)
+        preferences.setPinState(maps.id, true)
+        preferences.setPinState(workMail.id, true)
+        val viewModel = loadedViewModel()
+        try {
+            assertEquals(listOf(maps.id, workMail.id), viewModel.uiState.value.pinnedApps.map { it.id })
+
+            appsRepository.apps = listOf(calendar, camera, maps)
+            appsRepository.profileStates[10] = ProfileState.PAUSED
+            appsRepository.changes.emit(AppChange.Refresh)
+            runCurrent()
+            var state = viewModel.uiState.value
+            val pausedMail = state.pinnedApps.last()
+            assertEquals(listOf(maps.id, workMail.id), state.pinnedApps.map { it.id })
+            assertTrue(pausedMail.isProfilePaused)
+            assertTrue(state.allApps.single { it.id == workMail.id }.isProfilePaused)
+
+            appsRepository.failLaunches = true
+            viewModel.launchApp(pausedMail)
+            runCurrent()
+            assertEquals(
+                StatusMessage(R.string.status_cant_open_paused, listOf("Mail")),
+                viewModel.uiState.value.statusMessage
+            )
+
+            appsRepository.apps = listOf(calendar, camera, maps, workMail)
+            appsRepository.profileStates.remove(10)
+            appsRepository.changes.emit(AppChange.Refresh)
+            runCurrent()
+            state = viewModel.uiState.value
+            assertFalse(state.pinnedApps.last().isProfilePaused)
+            assertEquals(listOf(workMail.id), preferences.preferencesFlow.first().pinnedAppOrder.filter { '@' in it })
+        } finally { viewModel.viewModelScope.cancel() }
+    }
+
+    @Test
+    fun `typing opens the personal copy of an app installed in both profiles`() = runTest(dispatcher) {
+        appsRepository.apps = listOf(calendar, camera, maps, inProfile(maps, serial = 10))
+        val viewModel = loadedViewModel()
+        viewModel.openDrawer()
+        advanceUntilIdle()
+
+        viewModel.onSearchQueryChanged("m")
+        viewModel.onSearchQueryChanged("ma")
+        advanceUntilIdle()
+
+        assertEquals(listOf(maps.id), appsRepository.launched.map { it.id })
+        assertFalse(viewModel.uiState.value.isDrawerOpen)
+    }
+
+    @Test
+    fun `work pins from an old phone move to this phone's work profile`() = runTest(dispatcher) {
+        // Settings brought over from a phone whose work profile had serial 10. This phone's is 12.
+        val oldWorkMail = "pkg.mail/Main@10"
+        preferences.setPinState(oldWorkMail, true)
+        preferences.setPinState(camera.id, true)
+        val newWorkMail = inProfile(app("Mail"), serial = 12)
+        appsRepository.apps = listOf(calendar, camera, maps, newWorkMail)
+        val viewModel = loadedViewModel()
+        try {
+            assertEquals(listOf(newWorkMail.id, camera.id), viewModel.uiState.value.pinnedApps.map { it.id })
+            assertEquals(listOf(newWorkMail.id, camera.id), preferences.preferencesFlow.first().pinnedAppOrder)
+        } finally { viewModel.viewModelScope.cancel() }
+    }
+
+    @Test
+    fun `work pins stay put while their profile still exists`() = runTest(dispatcher) {
+        val oldWorkMail = "pkg.mail/Main@10"
+        preferences.setPinState(oldWorkMail, true)
+        appsRepository.otherKnownProfiles += 10L
+        appsRepository.apps = listOf(calendar, camera, maps, inProfile(app("Mail"), serial = 12))
+        val viewModel = loadedViewModel()
+        try {
+            assertEquals(listOf(oldWorkMail), preferences.preferencesFlow.first().pinnedAppOrder)
+        } finally { viewModel.viewModelScope.cancel() }
     }
 }

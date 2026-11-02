@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import app.serene.launcher.data.InstalledAppsRepository
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.data.LauncherUserPreferences
+import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.app
 import app.serene.launcher.testing.temporaryPreferences
@@ -56,7 +57,7 @@ class ExampleRobolectricTest {
     fun `initial pins prefer exact matches and skip work apps`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val repo = InstalledAppsRepository(context)
-        val workPhone = app("Phone", id = "work.phone/Main@10").copy(profileSerial = 10, isWorkProfile = true)
+        val workPhone = app("Phone", id = "work.phone/Main@10").copy(profileSerial = 10, profileKind = ProfileKind.WORK)
         val apps = listOf(
             app("Phone Backup"),
             app("Phone"),
