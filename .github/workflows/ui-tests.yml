@@ -38,6 +38,16 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           script: ./gradlew connectedDebugAndroidTest
+      - name: Show failing UI tests in the log
+        if: failure()
+        run: |
+          find app/build/outputs/androidTest-results -name '*.xml' -print0 2>/dev/null \
+            | xargs -0 -r grep -l '<failure' \
+            | while read -r file; do
+                echo "::group::$file"
+                sed -n '/<testcase/,/<\/testcase>/p' "$file" | grep -v '^\s*$' | head -n 400
+                echo "::endgroup::"
+              done
       - name: Upload the UI test report
         if: always()
         uses: actions/upload-artifact@v5
