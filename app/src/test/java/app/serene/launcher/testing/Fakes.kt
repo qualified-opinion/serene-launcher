@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.AppsRepository
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.ProfileScan
 import app.serene.launcher.model.ProfileState
@@ -69,6 +70,18 @@ class FakeAppsRepository(
 
     override fun openAppInfo(app: AppItem): Result<Unit> =
         if (failLaunches) Result.failure(IllegalStateException("app info failed")) else Result.success(Unit)
+
+    /** Shortcuts by app id, as the long-press menu would get them. */
+    val shortcuts = mutableMapOf<String, List<AppShortcut>>()
+    val startedShortcuts = mutableListOf<AppShortcut>()
+
+    override suspend fun shortcutsFor(app: AppItem): List<AppShortcut> = shortcuts[app.id].orEmpty()
+
+    override fun startShortcut(shortcut: AppShortcut): Result<Unit> {
+        if (failLaunches) return Result.failure(IllegalStateException("shortcut failed"))
+        startedShortcuts += shortcut
+        return Result.success(Unit)
+    }
 }
 
 /** DataStore that keeps preferences in memory, so tests need no files or Android runtime. */

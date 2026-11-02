@@ -15,6 +15,7 @@ import app.serene.launcher.data.LauncherUserPreferences
 import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.domain.ProfileApps
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.LauncherUiState
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.StatusMessage
@@ -42,12 +43,14 @@ class LauncherViewModel(
     private val _appBeingRenamed = MutableStateFlow<AppItem?>(null)
     private val _isSettingsOpen = MutableStateFlow(false)
     private val _statusMessage = MutableStateFlow<StatusMessage?>(null)
+    private val _appShortcuts = MutableStateFlow<List<AppShortcut>>(emptyList())
 
     private val _uiState = MutableStateFlow(LauncherUiState())
     val uiState: StateFlow<LauncherUiState> = _uiState.asStateFlow()
 
     private var statusClearJob: Job? = null
     private var refreshJob: Job? = null
+    private var shortcutsJob: Job? = null
 
     init {
         observeState()
@@ -94,9 +97,11 @@ class LauncherViewModel(
                     isSettingsOpen = settingsOpen
                 )
             }.combine(
-                combine(_isReordering, _appBeingRenamed) { reordering, renaming -> reordering to renaming }
-            ) { state, (reordering, renaming) ->
-                state.copy(isReorderingPins = reordering, appBeingRenamed = renaming)
+                combine(_isReordering, _appBeingRenamed, _appShortcuts) { reordering, renaming, shortcuts ->
+                    Triple(reordering, renaming, shortcuts)
+                }
+            ) { state, (reordering, renaming, shortcuts) ->
+                state.copy(isReorderingPins = reordering, appBeingRenamed = renaming, appShortcuts = shortcuts)
             }.collect { state ->
                 _uiState.value = state
             }
@@ -235,6 +240,36 @@ class LauncherViewModel(
 
     fun onAppLongPress(app: AppItem) {
         _selectedAppForMenu.value = app
+        loadShortcuts(app)
+    }
+
+    /** Loads [app]'s shortcuts for its menu. They only show if the menu is still open for that app. */
+    private fun loadShortcuts(app: AppItem) {
+        shortcutsJob?.cancel()
+        _appShortcuts.value = emptyList()
+        shortcutsJob = viewModelScope.launch {
+            val shortcuts = try {
+                installedAppsRepository.shortcutsFor(app)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                emptyList()
+            }
+            if (_selectedAppForMenu.value?.id == app.id) _appShortcuts.value = shortcuts
+        }
+    }
+
+    fun startShortcut(shortcut: AppShortcut) {
+        _selectedAppForMenu.value = null
+        installedAppsRepository.startShortcut(shortcut)
+            .onSuccess {
+                if (_isDrawerOpen.value) {
+                    _searchQuery.value = ""
+                    _isDrawerOpen.value = false
+                }
+                showTransientMessage(StatusMessage(R.string.status_opening, listOf(shortcut.label)))
+            }
+            .onFailure { showTransientMessage(StatusMessage(R.string.status_cant_open, listOf(shortcut.label))) }
     }
 
     fun dismissAppMenu() {

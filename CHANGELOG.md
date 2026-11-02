@@ -7,6 +7,7 @@ When you release, rename **Unreleased** to the version and date, for example `##
 ## [Unreleased]
 
 ### Added
+- Press and hold an app to see its own shortcuts, such as "New message", and tap one to open it. This needs Serene to be your default home app and Android 7.1 or later.
 - Hide apps from the app list, and unhide them in Settings.
 - Rename apps; the new name is used for sorting and search, and you can go back to the original name.
 - Reorder pinned apps on Home with up and down buttons.

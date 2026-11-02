@@ -1,6 +1,6 @@
 # Serene Launcher roadmap
 
-Updated 2026-11-02 against `main` `a6782a4`. This file replaces [issue #27](https://github.com/qualified-opinion/serene-launcher/issues/27) as the source of truth. Issue #27 stays open as a pointer.
+Updated 2026-11-02 against `main` `fb176f6`. This file replaces [issue #27](https://github.com/qualified-opinion/serene-launcher/issues/27) as the source of truth. Issue #27 stays open as a pointer.
 
 ## What this is
 A minimalist, fully offline Android home screen. It has pinned apps on Home and a searchable A–Z drawer, including work apps. It's distributed as sideloaded APKs on GitHub Releases only.
@@ -19,8 +19,8 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | B6 Release | `ci/release-workflow` | #24, N-12 | Merged #37, `111de35` | - |
 | B7 Publish | `docs/publish` | #25, MIT licence | Merged #38, `2b9fde3` | - |
 | B8 Work profiles | `claude/clever-dirac-h3cvw6` | N-05, N-06, N-10, N-16, B6 | Merged #42, `a6782a4` | - |
-| B9 UI tests | `claude/clever-dirac-h3cvw6` | #26 (the macrobenchmark part is left for a later PR) | In review | - |
-| B10 Shortcuts and gestures | two branches | #22 and #20, run side by side | Outline | - |
+| B9 UI tests | `claude/clever-dirac-h3cvw6` | #26 (the macrobenchmark part is left for a later PR) | Merged #43, `fb176f6` | - |
+| B10 Shortcuts and gestures | `claude/clever-dirac-h3cvw6` | #22 and #20, one PR each, shortcuts first | #22 in review, #20 next | - |
 | B11 Wallpaper | `feat/wallpaper-colours` | #21 | Outline | - |
 | B12 Backup file | `feat/backup-file` | #23, the in-app export and import file | Outline | - |
 

@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.Launch
 import androidx.compose.material.icons.automirrored.outlined.Message
 import androidx.compose.material.icons.filled.PushPin
@@ -100,6 +101,7 @@ import androidx.compose.ui.unit.sp
 import app.serene.launcher.R
 import app.serene.launcher.data.AppIconLoader
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.FallbackIconGlyph
 import app.serene.launcher.model.ProfileKind
 
@@ -513,7 +515,9 @@ fun AppContextActionSheet(
     onAppInfo: () -> Unit,
     onReorderPins: () -> Unit = {},
     onRename: () -> Unit = {},
-    onHide: () -> Unit = {}
+    onHide: () -> Unit = {},
+    shortcuts: List<AppShortcut> = emptyList(),
+    onShortcutClick: (AppShortcut) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -559,6 +563,21 @@ fun AppContextActionSheet(
             Spacer(modifier = Modifier.height(18.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Spacer(modifier = Modifier.height(8.dp))
+
+            // The app's own shortcuts, such as "New message", only when Serene is the home app.
+            if (shortcuts.isNotEmpty()) {
+                shortcuts.forEach { shortcut ->
+                    SheetActionRow(
+                        Icons.AutoMirrored.Outlined.ArrowForward,
+                        shortcut.label,
+                        { onShortcutClick(shortcut) },
+                        "sheet_shortcut_${shortcut.id}"
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             // Primary action: Pin or Unpin
             Row(
