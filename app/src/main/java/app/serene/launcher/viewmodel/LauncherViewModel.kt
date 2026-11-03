@@ -15,6 +15,7 @@ import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.data.LauncherUserPreferences
 import app.serene.launcher.data.LockResult
 import app.serene.launcher.data.NoSystemActions
+import app.serene.launcher.data.SettingsBackup
 import app.serene.launcher.data.SystemActions
 import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.domain.ProfileApps
@@ -33,6 +34,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class LauncherViewModel(
@@ -414,6 +417,63 @@ class LauncherViewModel(
         if (!_uiState.value.swipeDownForNotifications) return
         if (!systemActions.openNotifications()) {
             showTransientMessage(StatusMessage(R.string.status_cant_open_notifications))
+        }
+    }
+
+    /** Builds the settings backup and hands it to [write], which saves it in the file the user chose. */
+    fun exportSettings(write: suspend (String) -> Unit) {
+        viewModelScope.launch {
+            val saved = try {
+                val prefs = preferencesRepository.preferencesFlow(flowOf(_rawInstalledApps.value)).first()
+                write(SettingsBackup.write(prefs))
+                true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                false
+            }
+            showTransientMessage(
+                StatusMessage(if (saved) R.string.status_settings_exported else R.string.status_settings_export_failed)
+            )
+        }
+    }
+
+    /**
+     * Reads a settings backup with [read] (null when the file couldn't be opened or is far too big)
+     * and applies it. A file that isn't a Serene backup changes nothing.
+     */
+    fun importSettings(read: suspend () -> String?) {
+        viewModelScope.launch {
+            val result = try {
+                read()?.let(SettingsBackup::read)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                null
+            }
+            val contents = (result as? SettingsBackup.ReadResult.Ok)?.contents
+            if (contents == null) {
+                showTransientMessage(StatusMessage(R.string.status_not_a_backup))
+                return@launch
+            }
+            val imported = try {
+                preferencesRepository.importBackup(contents)
+                true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                false
+            }
+            showTransientMessage(
+                if (!imported) {
+                    StatusMessage(R.string.status_settings_import_failed)
+                } else {
+                    StatusMessage(
+                        if (contents.skipped > 0) R.string.status_settings_imported_some_skipped else R.string.status_settings_imported,
+                        listOf(contents.pins?.size ?: 0, contents.hidden?.size ?: 0, contents.names?.size ?: 0)
+                    )
+                }
+            )
         }
     }
 

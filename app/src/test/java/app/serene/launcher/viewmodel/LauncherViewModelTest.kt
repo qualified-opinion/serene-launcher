@@ -8,6 +8,7 @@ import app.serene.launcher.R
 import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.data.LockResult
+import app.serene.launcher.data.SettingsBackup
 import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.ProfileState
@@ -690,5 +691,56 @@ class LauncherViewModelTest {
         assertTrue(viewModel.uiState.value.showWallpaper)
         assertTrue(viewModel.uiState.value.useWallpaperColours)
         assertTrue(preferences.preferencesFlow.first().showWallpaper)
+    }
+
+    @Test
+    fun `exported settings import back and say what was imported`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        viewModel.hideApp(camera)
+        advanceUntilIdle()
+        var file = ""
+
+        viewModel.exportSettings { file = it }
+        runCurrent()
+        assertEquals(StatusMessage(R.string.status_settings_exported), viewModel.uiState.value.statusMessage)
+        val saved = SettingsBackup.read(file) as SettingsBackup.ReadResult.Ok
+        assertEquals(listOf(maps.id), saved.contents.pins)
+
+        viewModel.togglePin(maps)
+        viewModel.unhideApp(camera)
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.pinnedApps.isEmpty())
+
+        viewModel.importSettings { file }
+        runCurrent()
+        assertEquals(StatusMessage(R.string.status_settings_imported, listOf(1, 1, 0)), viewModel.uiState.value.statusMessage)
+        advanceUntilIdle()
+        assertEquals(listOf(maps.id), viewModel.uiState.value.pinnedApps.map { it.id })
+        assertEquals(listOf(camera.id), viewModel.uiState.value.hiddenApps.map { it.id })
+    }
+
+    @Test
+    fun `importing a file that isn't a backup changes nothing and says so`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        val before = preferences.preferencesFlow.first()
+
+        viewModel.importSettings { "\u0089PNG not a settings file" }
+        runCurrent()
+        assertEquals(StatusMessage(R.string.status_not_a_backup), viewModel.uiState.value.statusMessage)
+
+        viewModel.importSettings { null }
+        runCurrent()
+        assertEquals(StatusMessage(R.string.status_not_a_backup), viewModel.uiState.value.statusMessage)
+        assertEquals(before, preferences.preferencesFlow.first())
+    }
+
+    @Test
+    fun `a file that can't be written says so`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+
+        viewModel.exportSettings { throw java.io.IOException("disk full") }
+        runCurrent()
+
+        assertEquals(StatusMessage(R.string.status_settings_export_failed), viewModel.uiState.value.statusMessage)
     }
 }

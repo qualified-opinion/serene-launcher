@@ -86,6 +86,8 @@ fun SettingsScreen(
     onUseWallpaperColoursChange: (Boolean) -> Unit = {},
     /** Wallpaper colours need Android 12; the switch is hidden on older phones. */
     supportsWallpaperColours: Boolean = true,
+    onExportSettings: () -> Unit = {},
+    onImportSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onClose)
@@ -215,6 +217,13 @@ fun SettingsScreen(
             SwipeAppRow(R.string.settings_swipe_right, swipeRight, "settings_swipe_right") {
                 pickingSwipeSide = SwipeSide.RIGHT
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            SectionHeader(R.string.settings_section_backup)
+            ActionRow(R.string.settings_export, R.string.settings_export_summary, "settings_export", onExportSettings)
+            ActionRow(R.string.settings_import, R.string.settings_import_summary, "settings_import", onImportSettings)
 
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -430,4 +439,27 @@ private fun PickerRow(text: String, testTag: String, onClick: () -> Unit) {
             .padding(vertical = 12.dp)
             .testTag(testTag)
     )
+}
+
+/** A Settings row that does something when tapped, with a short explanation under its title. */
+@Composable
+private fun ActionRow(@StringRes titleRes: Int, @StringRes summaryRes: Int, testTag: String, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .testTag(testTag)
+    ) {
+        Text(
+            text = stringResource(titleRes),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = stringResource(summaryRes),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
