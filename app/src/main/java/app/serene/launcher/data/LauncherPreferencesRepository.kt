@@ -326,6 +326,35 @@ class LauncherPreferencesRepository(
         dataStore.edit { prefs -> prefs[KEY_DOUBLE_TAP_LOCK] = enabled }
     }
 
+    /**
+     * Applies a settings backup in one step. Whatever the file had replaces the current value;
+     * whatever it didn't have stays as it is. Pins for apps that aren't installed are kept, so
+     * they appear once the app is installed.
+     */
+    suspend fun importBackup(backup: SettingsBackup.Contents) {
+        dataStore.edit { prefs ->
+            backup.pins?.let { prefs.writePins(it) }
+            backup.hidden?.let { prefs[KEY_HIDDEN_APP_IDS] = it }
+            val names = backup.names
+            if (names != null) {
+                if (names.isEmpty()) prefs.remove(KEY_CUSTOM_APP_LABELS)
+                else prefs[KEY_CUSTOM_APP_LABELS] = encodeLabels(names)
+            }
+            backup.theme?.let { prefs[KEY_THEME_MODE] = it.name }
+            backup.showAppIcons?.let { prefs[KEY_SHOW_APP_ICONS] = it }
+            backup.autoLaunchSingleMatch?.let { prefs[KEY_AUTO_LAUNCH_SINGLE] = it }
+            backup.openKeyboardOnDrawer?.let { prefs[KEY_OPEN_KEYBOARD_ON_DRAWER] = it }
+            backup.swipeDownForNotifications?.let { prefs[KEY_SWIPE_DOWN_NOTIFICATIONS] = it }
+            backup.doubleTapToLock?.let { prefs[KEY_DOUBLE_TAP_LOCK] = it }
+            backup.showWallpaper?.let { prefs[KEY_SHOW_WALLPAPER] = it }
+            backup.useWallpaperColours?.let { prefs[KEY_WALLPAPER_COLOURS] = it }
+            for ((key, id) in listOf(KEY_SWIPE_LEFT_APP to backup.swipeLeftApp, KEY_SWIPE_RIGHT_APP to backup.swipeRightApp)) {
+                if (id == null) continue
+                if (id.isEmpty()) prefs.remove(key) else prefs[key] = id
+            }
+        }
+    }
+
     suspend fun setShowWallpaper(show: Boolean) {
         dataStore.edit { prefs -> prefs[KEY_SHOW_WALLPAPER] = show }
     }

@@ -1,6 +1,6 @@
 # Serene Launcher roadmap
 
-Updated 2026-11-03 against `main` `bab08c6`. This file replaces [issue #27](https://github.com/qualified-opinion/serene-launcher/issues/27) as the source of truth. Issue #27 stays open as a pointer.
+Updated 2026-11-03 against `main` `9a62669`. This file replaces [issue #27](https://github.com/qualified-opinion/serene-launcher/issues/27) as the source of truth. Issue #27 stays open as a pointer.
 
 ## What this is
 A minimalist, fully offline Android home screen. It has pinned apps on Home and a searchable A–Z drawer, including work apps. It's distributed as sideloaded APKs on GitHub Releases only.
@@ -21,8 +21,8 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | B8 Work profiles | `claude/clever-dirac-h3cvw6` | N-05, N-06, N-10, N-16, B6 | Merged #42, `a6782a4` | - |
 | B9 UI tests | `claude/clever-dirac-h3cvw6` | #26 (the macrobenchmark part is left for a later PR) | Merged #43, `fb176f6` | - |
 | B10 Shortcuts and gestures | `claude/clever-dirac-h3cvw6` | #22, then #20 in two parts: swipe down and double-tap to lock, then swipe left/right to open an app | Merged #44 `3fa5f69`, #45 `c833d99`, #46 `bab08c6` | - |
-| B11 Wallpaper | `claude/clever-dirac-h3cvw6` | #21 | In review | - |
-| B12 Backup file | `feat/backup-file` | #23, the in-app export and import file | Outline | - |
+| B11 Wallpaper | `claude/clever-dirac-h3cvw6` | #21 | Merged #47, `9a62669` | - |
+| B12 Backup file | `claude/clever-dirac-h3cvw6` | #23, export and import of a settings file (backup rules were settled in B3) | In review | - |
 
 ## Item index
 Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review 1](reviews/kiln-review-1.md).

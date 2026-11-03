@@ -7,6 +7,7 @@ Serene Launcher collects nothing and sends nothing.
 - **Your app list stays on your phone.** Serene reads the list of apps installed on your phone, including work-profile apps, only to show and open them. It doesn't store or share that list.
 - **What it saves, and where.** Your pins and their order, hidden apps, the names you give apps, and your Settings choices are saved in the app's private storage on your phone. Nothing else is saved.
 - **No cloud backup.** Android's Google cloud backup is turned off for Serene. If you move to a new phone with a cable or a direct phone-to-phone transfer, your Serene settings can come along. They never pass through anyone's servers.
+- **Settings file, only if you ask.** Settings → Export settings saves your pins, names, hidden apps and options to a file you choose, using Android's file picker. Serene never makes this file by itself, and Import settings only reads the one file you pick.
 - **Removing it.** Uninstalling Serene, or clearing its storage in Android's settings, deletes everything it saved.
 
 Serene can open other apps, Android's alarm and calendar screens, and an app's settings page when you ask it to. What those apps do is up to them.

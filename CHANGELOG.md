@@ -7,6 +7,7 @@ When you release, rename **Unreleased** to the version and date, for example `##
 ## [Unreleased]
 
 ### Added
+- Export your pins, names, hidden apps and options to a file, and import them again, for example on a new phone (Settings → Backup). No network involved.
 - Show your wallpaper behind Home and the app list, with a soft layer that keeps text readable (Settings → Appearance, off by default).
 - Use your wallpaper's colours (Material You) on Android 12 and later (Settings → Appearance, off by default).
 - Swipe left or right on Home to open an app you choose in Settings → Gestures (nothing by default).

@@ -66,6 +66,17 @@
     <string name="rename_cancel">Cancel</string>
     <string name="rename_reset">Use original name</string>
     <string name="settings_section_hidden">Hidden apps</string>
+    <string name="settings_section_backup">BACKUP</string>
+    <string name="settings_export">Export settings</string>
+    <string name="settings_export_summary">Save your pins, names, hidden apps and options to a file</string>
+    <string name="settings_import">Import settings</string>
+    <string name="settings_import_summary">Replace them with the ones in a file you exported</string>
+    <string name="status_settings_exported">Settings saved to the file</string>
+    <string name="status_settings_export_failed">Couldn\'t save the settings file</string>
+    <string name="status_settings_imported">Settings imported: %1$d pins, %2$d hidden apps, %3$d names</string>
+    <string name="status_settings_imported_some_skipped">Settings imported: %1$d pins, %2$d hidden apps, %3$d names. Parts of the file couldn\'t be read and were skipped.</string>
+    <string name="status_settings_import_failed">Couldn\'t import the settings. Nothing was changed.</string>
+    <string name="status_not_a_backup">That isn\'t a Serene settings file. Nothing was changed.</string>
     <string name="settings_hidden_empty">No hidden apps. To hide one, press and hold it in the app list.</string>
     <string name="settings_unhide">Unhide</string>
     <string name="settings_unhide_cd">Unhide %1$s</string>

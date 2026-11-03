@@ -10,7 +10,9 @@ import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
@@ -43,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.serene.launcher.data.AppIconLoader
+import app.serene.launcher.data.readSmallTextFrom
+import app.serene.launcher.data.writeTextTo
 import app.serene.launcher.ui.components.AppContextActionSheet
 import app.serene.launcher.ui.components.LocalAppIconLoader
 import app.serene.launcher.ui.components.RenameAppDialog
@@ -105,6 +109,13 @@ fun SereneLauncherRoot(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    // The system file picker: no storage permission and no network needed.
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) viewModel.exportSettings { text -> context.writeTextTo(uri, text) }
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) viewModel.importSettings { context.readSmallTextFrom(uri) }
+    }
     // Re-read when returning from Accessibility settings, where the user turns the service on or off.
     var isLockServiceOn by remember { mutableStateOf(viewModel.isLockServiceOn) }
     LifecycleResumeEffect(Unit) {
@@ -186,7 +197,10 @@ fun SereneLauncherRoot(
                         onShowWallpaperChange = viewModel::setShowWallpaper,
                         useWallpaperColours = uiState.useWallpaperColours,
                         onUseWallpaperColoursChange = viewModel::setUseWallpaperColours,
-                        supportsWallpaperColours = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                        supportsWallpaperColours = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+                        onExportSettings = { exportLauncher.launch("serene-launcher-settings.json") },
+                        // Any file can be picked, so a wrong one gets a clear message instead of being hidden.
+                        onImportSettings = { importLauncher.launch(arrayOf("*/*")) }
                     )
                     LauncherScreen.DRAWER -> AppDrawerScreen(
                         apps = uiState.filteredDrawerApps,
