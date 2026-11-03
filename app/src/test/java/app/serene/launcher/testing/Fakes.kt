@@ -5,6 +5,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.AppsRepository
+import app.serene.launcher.data.LockResult
+import app.serene.launcher.data.SystemActions
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.ProfileKind
@@ -93,4 +95,24 @@ class InMemoryPreferencesDataStore : DataStore<Preferences> {
 
     override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences =
         mutex.withLock { transform(state.value).also { state.value = it } }
+}
+
+/** Records gesture actions instead of performing them. */
+class FakeSystemActions(
+    var notificationsOpen: Boolean = true,
+    var lockResult: LockResult = LockResult.LOCKED
+) : SystemActions {
+    var notificationRequests = 0
+    var lockRequests = 0
+    override val isLockServiceOn: Boolean get() = lockResult == LockResult.LOCKED
+
+    override fun openNotifications(): Boolean {
+        notificationRequests++
+        return notificationsOpen
+    }
+
+    override fun lockScreen(): LockResult {
+        lockRequests++
+        return lockResult
+    }
 }

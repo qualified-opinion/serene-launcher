@@ -21,6 +21,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +31,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -56,9 +61,17 @@ fun SettingsScreen(
     onClose: () -> Unit,
     hiddenApps: List<AppItem> = emptyList(),
     onUnhideApp: (AppItem) -> Unit = {},
+    swipeDownForNotifications: Boolean = true,
+    onSwipeDownForNotificationsChange: (Boolean) -> Unit = {},
+    doubleTapToLock: Boolean = false,
+    onDoubleTapToLockChange: (Boolean) -> Unit = {},
+    isLockServiceOn: Boolean = false,
+    isLockSupported: Boolean = true,
+    onOpenAccessibilitySettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onClose)
+    var explainLockService by rememberSaveable { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -137,6 +150,33 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
+            SectionHeader(R.string.settings_section_gestures)
+            SwitchRow(
+                titleRes = R.string.settings_swipe_down,
+                summaryRes = null,
+                checked = swipeDownForNotifications,
+                onCheckedChange = onSwipeDownForNotificationsChange,
+                testTag = "settings_swipe_down"
+            )
+            SwitchRow(
+                titleRes = R.string.settings_double_tap_lock,
+                summaryRes = when {
+                    !isLockSupported -> R.string.settings_double_tap_lock_old_android
+                    doubleTapToLock && !isLockServiceOn -> R.string.settings_double_tap_lock_needs_service
+                    else -> R.string.settings_double_tap_lock_summary
+                },
+                checked = doubleTapToLock,
+                onCheckedChange = { enabled ->
+                    onDoubleTapToLockChange(enabled)
+                    // Explain the accessibility service before sending anyone to turn it on.
+                    if (enabled && isLockSupported && !isLockServiceOn) explainLockService = true
+                },
+                testTag = "settings_double_tap_lock"
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
             SectionHeader(R.string.settings_section_hidden)
             if (hiddenApps.isEmpty()) {
                 Text(
@@ -148,6 +188,28 @@ fun SettingsScreen(
             }
             hiddenApps.forEach { app -> HiddenAppRow(app, onUnhide = { onUnhideApp(app) }) }
         }
+    }
+
+    if (explainLockService) {
+        AlertDialog(
+            onDismissRequest = { explainLockService = false },
+            title = { Text(stringResource(R.string.lock_service_title)) },
+            text = { Text(stringResource(R.string.lock_service_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        explainLockService = false
+                        onOpenAccessibilitySettings()
+                    },
+                    modifier = Modifier.testTag("lock_service_open_settings")
+                ) { Text(stringResource(R.string.lock_service_open_settings)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { explainLockService = false }) {
+                    Text(stringResource(R.string.lock_service_not_now))
+                }
+            }
+        )
     }
 }
 

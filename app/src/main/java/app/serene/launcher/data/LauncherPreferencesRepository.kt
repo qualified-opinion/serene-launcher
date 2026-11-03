@@ -58,7 +58,11 @@ data class LauncherUserPreferences(
     val openKeyboardOnDrawer: Boolean = false,
     val hiddenAppIds: Set<String> = emptySet(),
     /** Names the user gave apps, by app id. */
-    val customLabels: Map<String, String> = emptyMap()
+    val customLabels: Map<String, String> = emptyMap(),
+    /** Swiping down on Home opens the notifications. On unless the user turns it off. */
+    val swipeDownForNotifications: Boolean = true,
+    /** Double-tapping empty space on Home locks the screen. Off until the user turns it on. */
+    val doubleTapToLock: Boolean = false
 )
 
 class LauncherPreferencesRepository(
@@ -77,6 +81,8 @@ class LauncherPreferencesRepository(
         val KEY_SHOW_APP_ICONS = booleanPreferencesKey("show_app_icons")
         val KEY_AUTO_LAUNCH_SINGLE = booleanPreferencesKey("auto_launch_single_match")
         val KEY_HIDDEN_APP_IDS = stringSetPreferencesKey("hidden_app_ids")
+        val KEY_SWIPE_DOWN_NOTIFICATIONS = booleanPreferencesKey("swipe_down_notifications")
+        val KEY_DOUBLE_TAP_LOCK = booleanPreferencesKey("double_tap_lock")
         /** One "id<TAB>name" entry per line. Ids can't hold tabs or newlines, and names are stripped of them. */
         val KEY_CUSTOM_APP_LABELS = stringPreferencesKey("custom_app_labels")
 
@@ -119,7 +125,9 @@ class LauncherPreferencesRepository(
                 autoLaunchSingleMatch = prefs[KEY_AUTO_LAUNCH_SINGLE] ?: true,
                 openKeyboardOnDrawer = prefs[KEY_OPEN_KEYBOARD_ON_DRAWER] ?: false,
                 hiddenAppIds = prefs[KEY_HIDDEN_APP_IDS] ?: emptySet(),
-                customLabels = decodeLabels(prefs[KEY_CUSTOM_APP_LABELS])
+                customLabels = decodeLabels(prefs[KEY_CUSTOM_APP_LABELS]),
+                swipeDownForNotifications = prefs[KEY_SWIPE_DOWN_NOTIFICATIONS] ?: true,
+                doubleTapToLock = prefs[KEY_DOUBLE_TAP_LOCK] ?: false
             )
         }
 
@@ -278,6 +286,14 @@ class LauncherPreferencesRepository(
         dataStore.edit { prefs ->
             prefs[KEY_AUTO_LAUNCH_SINGLE] = autoLaunch
         }
+    }
+
+    suspend fun setSwipeDownForNotifications(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[KEY_SWIPE_DOWN_NOTIFICATIONS] = enabled }
+    }
+
+    suspend fun setDoubleTapToLock(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[KEY_DOUBLE_TAP_LOCK] = enabled }
     }
 
     suspend fun setOpenKeyboardOnDrawer(open: Boolean) {

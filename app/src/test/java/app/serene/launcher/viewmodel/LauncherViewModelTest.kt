@@ -7,12 +7,14 @@ import androidx.lifecycle.viewModelScope
 import app.serene.launcher.R
 import app.serene.launcher.data.AppChange
 import app.serene.launcher.data.LauncherPreferencesRepository
+import app.serene.launcher.data.LockResult
 import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.ProfileState
 import app.serene.launcher.model.StatusMessage
 import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.FakeAppsRepository
+import app.serene.launcher.testing.FakeSystemActions
 import app.serene.launcher.testing.InMemoryPreferencesDataStore
 import app.serene.launcher.testing.app
 import app.serene.launcher.testing.inProfile
@@ -50,6 +52,7 @@ class LauncherViewModelTest {
     private val maps = app("Maps")
     private lateinit var appsRepository: FakeAppsRepository
     private lateinit var preferences: LauncherPreferencesRepository
+    private val systemActions = FakeSystemActions()
 
     @Before
     fun setUp() {
@@ -64,7 +67,7 @@ class LauncherViewModelTest {
     }
 
     private fun TestScope.loadedViewModel(): LauncherViewModel =
-        LauncherViewModel(appsRepository, preferences).also { advanceUntilIdle() }
+        LauncherViewModel(appsRepository, preferences, systemActions).also { advanceUntilIdle() }
 
     @Test
     fun `first load lists every app and applies the default pins`() = runTest(dispatcher) {
@@ -568,5 +571,64 @@ class LauncherViewModelTest {
 
         assertTrue(viewModel.uiState.value.isDrawerOpen)
         assertEquals(StatusMessage(R.string.status_cant_open, listOf("New photo")), viewModel.uiState.value.statusMessage)
+    }
+
+    @Test
+    fun `swiping down on Home opens notifications unless it is turned off`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+
+        viewModel.onHomeSwipeDown()
+        assertEquals(1, systemActions.notificationRequests)
+
+        viewModel.setSwipeDownForNotifications(false)
+        advanceUntilIdle()
+        viewModel.onHomeSwipeDown()
+        assertEquals(1, systemActions.notificationRequests)
+        assertFalse(viewModel.uiState.value.swipeDownForNotifications)
+    }
+
+    @Test
+    fun `notifications that won't open point to Accessibility settings`() = runTest(dispatcher) {
+        systemActions.notificationsOpen = false
+        val viewModel = loadedViewModel()
+
+        viewModel.onHomeSwipeDown()
+        runCurrent()
+
+        assertEquals(StatusMessage(R.string.status_cant_open_notifications), viewModel.uiState.value.statusMessage)
+    }
+
+    @Test
+    fun `double-tap does nothing until it is turned on, then locks the screen`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        assertFalse(viewModel.uiState.value.doubleTapToLock)
+
+        viewModel.onHomeDoubleTap()
+        assertEquals(0, systemActions.lockRequests)
+
+        viewModel.setDoubleTapToLock(true)
+        advanceUntilIdle()
+        viewModel.onHomeDoubleTap()
+        runCurrent()
+
+        assertEquals(1, systemActions.lockRequests)
+        assertNull(viewModel.uiState.value.statusMessage)
+    }
+
+    @Test
+    fun `double-tap explains what is missing when the screen can't be locked`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        viewModel.setDoubleTapToLock(true)
+        advanceUntilIdle()
+
+        systemActions.lockResult = LockResult.NEEDS_SERVICE
+        viewModel.onHomeDoubleTap()
+        runCurrent()
+        assertEquals(StatusMessage(R.string.status_lock_needs_service), viewModel.uiState.value.statusMessage)
+
+        systemActions.lockResult = LockResult.NOT_SUPPORTED
+        viewModel.onHomeDoubleTap()
+        runCurrent()
+        assertEquals(StatusMessage(R.string.status_lock_not_supported), viewModel.uiState.value.statusMessage)
     }
 }

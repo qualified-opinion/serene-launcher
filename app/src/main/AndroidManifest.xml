@@ -12,6 +12,8 @@
 
     <!-- Android 15+: lets the default home app list private space. It is not a network permission. -->
     <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
+    <!-- Lets a swipe down on Home pull down the notification shade. Not a network permission. -->
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
 
     <!-- Backup is off on every API level, so API 24-30 needs no fullBackupContent. -->
     <application
@@ -40,6 +42,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Off until the user turns it on in Accessibility settings. It only locks the screen or
+             opens notifications on a Home gesture and reads no screen content. -->
+        <service
+            android:name=".SereneAccessibilityService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
     </application>
 
 </manifest>

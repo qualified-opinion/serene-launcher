@@ -3,10 +3,12 @@ package app.serene.launcher
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.provider.AlarmClock
 import android.provider.CalendarContract
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -30,11 +32,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.serene.launcher.data.AppIconLoader
 import app.serene.launcher.ui.components.AppContextActionSheet
@@ -95,6 +101,12 @@ fun SereneLauncherRoot(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    // Re-read when returning from Accessibility settings, where the user turns the service on or off.
+    var isLockServiceOn by remember { mutableStateOf(viewModel.isLockServiceOn) }
+    LifecycleResumeEffect(Unit) {
+        isLockServiceOn = viewModel.isLockServiceOn
+        onPauseOrDispose { }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -152,7 +164,16 @@ fun SereneLauncherRoot(
                         onOpenKeyboardOnDrawerChange = viewModel::setOpenKeyboardOnDrawer,
                         hiddenApps = uiState.hiddenApps,
                         onUnhideApp = viewModel::unhideApp,
-                        onClose = viewModel::closeSettings
+                        onClose = viewModel::closeSettings,
+                        swipeDownForNotifications = uiState.swipeDownForNotifications,
+                        onSwipeDownForNotificationsChange = viewModel::setSwipeDownForNotifications,
+                        doubleTapToLock = uiState.doubleTapToLock,
+                        onDoubleTapToLockChange = viewModel::setDoubleTapToLock,
+                        isLockServiceOn = isLockServiceOn,
+                        isLockSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P,
+                        onOpenAccessibilitySettings = {
+                            context.openSystemScreen(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) {}
+                        }
                     )
                     LauncherScreen.DRAWER -> AppDrawerScreen(
                         apps = uiState.filteredDrawerApps,
@@ -181,6 +202,8 @@ fun SereneLauncherRoot(
                         onAppLongPress = viewModel::onAppLongPress,
                         onOpenDrawer = viewModel::openDrawer,
                         onOpenSettings = viewModel::openSettings,
+                        onSwipeDown = viewModel::onHomeSwipeDown,
+                        onDoubleTap = if (uiState.doubleTapToLock) viewModel::onHomeDoubleTap else null,
                         onClockClick = {
                             context.openSystemScreen(Intent(AlarmClock.ACTION_SHOW_ALARMS)) {
                                 viewModel.onSystemScreenUnavailable(R.string.status_cant_open_alarms)
