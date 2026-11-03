@@ -3,6 +3,7 @@ package app.serene.launcher.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,9 +12,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -46,6 +50,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.serene.launcher.R
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.SwipeSide
+import app.serene.launcher.model.SwipeTarget
 import app.serene.launcher.model.ThemeMode
 
 @Composable
@@ -68,10 +74,16 @@ fun SettingsScreen(
     isLockServiceOn: Boolean = false,
     isLockSupported: Boolean = true,
     onOpenAccessibilitySettings: () -> Unit = {},
+    swipeLeft: SwipeTarget? = null,
+    swipeRight: SwipeTarget? = null,
+    /** The apps a swipe can open, for the picker. */
+    pickableApps: List<AppItem> = emptyList(),
+    onSwipeAppChange: (SwipeSide, AppItem?) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onClose)
     var explainLockService by rememberSaveable { mutableStateOf(false) }
+    var pickingSwipeSide by rememberSaveable { mutableStateOf<SwipeSide?>(null) }
 
     Box(
         modifier = modifier
@@ -173,6 +185,12 @@ fun SettingsScreen(
                 },
                 testTag = "settings_double_tap_lock"
             )
+            SwipeAppRow(R.string.settings_swipe_left, swipeLeft, "settings_swipe_left") {
+                pickingSwipeSide = SwipeSide.LEFT
+            }
+            SwipeAppRow(R.string.settings_swipe_right, swipeRight, "settings_swipe_right") {
+                pickingSwipeSide = SwipeSide.RIGHT
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -188,6 +206,18 @@ fun SettingsScreen(
             }
             hiddenApps.forEach { app -> HiddenAppRow(app, onUnhide = { onUnhideApp(app) }) }
         }
+    }
+
+    pickingSwipeSide?.let { side ->
+        SwipeAppPicker(
+            titleRes = if (side == SwipeSide.LEFT) R.string.settings_swipe_left else R.string.settings_swipe_right,
+            apps = pickableApps,
+            onPick = { app ->
+                pickingSwipeSide = null
+                onSwipeAppChange(side, app)
+            },
+            onDismiss = { pickingSwipeSide = null }
+        )
     }
 
     if (explainLockService) {
@@ -307,4 +337,73 @@ private fun SwitchRow(
         }
         Switch(checked = checked, onCheckedChange = null)
     }
+}
+
+/** A Settings row naming the app a swipe opens, or "Nothing". Tapping it opens the picker. */
+@Composable
+private fun SwipeAppRow(@StringRes titleRes: Int, target: SwipeTarget?, testTag: String, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .testTag(testTag)
+    ) {
+        Text(
+            text = stringResource(titleRes),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = when {
+                target == null -> stringResource(R.string.settings_swipe_nothing)
+                target.app == null -> stringResource(R.string.settings_swipe_app_missing)
+                else -> target.app.label
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/** Lets the user choose the app a swipe opens, with "Nothing" first to turn the swipe off. */
+@Composable
+private fun SwipeAppPicker(
+    @StringRes titleRes: Int,
+    apps: List<AppItem>,
+    onPick: (AppItem?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(titleRes)) },
+        text = {
+            LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                item(key = "none") {
+                    PickerRow(stringResource(R.string.settings_swipe_nothing), "swipe_pick_none") { onPick(null) }
+                }
+                items(apps, key = { it.id }) { app ->
+                    PickerRow(app.label, "swipe_pick_${app.id}") { onPick(app) }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.rename_cancel)) }
+        }
+    )
+}
+
+@Composable
+private fun PickerRow(text: String, testTag: String, onClick: () -> Unit) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp)
+            .testTag(testTag)
+    )
 }

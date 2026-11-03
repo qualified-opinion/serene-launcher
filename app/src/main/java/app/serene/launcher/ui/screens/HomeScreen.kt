@@ -3,6 +3,7 @@ package app.serene.launcher.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,6 +52,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.serene.launcher.R
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.SwipeSide
 import app.serene.launcher.ui.components.MinimalClockDateHeader
 import app.serene.launcher.ui.components.PinnedAppRow
 
@@ -74,6 +76,8 @@ fun HomeScreen(
     onMovePin: (AppItem, Int) -> Unit = { _, _ -> },
     onDoneReordering: () -> Unit = {},
     onSwipeDown: () -> Unit = {},
+    /** A swipe left or right; the app it opens is chosen in Settings. */
+    onSwipeSideways: (SwipeSide) -> Unit = {},
     /** Null when double-tap is off, so single taps on Home aren't held back waiting for a second. */
     onDoubleTap: (() -> Unit)? = null
 ) {
@@ -82,6 +86,7 @@ fun HomeScreen(
     BackHandler { onDoneReordering() }
 
     var cumulativeUpwardDrag by remember { mutableFloatStateOf(0f) }
+    var cumulativeSidewaysDrag by remember { mutableFloatStateOf(0f) }
     val openDrawerThresholdPx = with(LocalDensity.current) { OpenDrawerSwipeThreshold.toPx() }
 
     Box(
@@ -102,6 +107,21 @@ fun HomeScreen(
                     onVerticalDrag = { _, dragAmount ->
                         cumulativeUpwardDrag += dragAmount
                     }
+                )
+            }
+            // Sideways swipes; a drag only counts once it clearly goes left or right, not up or down.
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragStart = { cumulativeSidewaysDrag = 0f },
+                    onDragEnd = {
+                        when {
+                            cumulativeSidewaysDrag < -openDrawerThresholdPx -> onSwipeSideways(SwipeSide.LEFT)
+                            cumulativeSidewaysDrag > openDrawerThresholdPx -> onSwipeSideways(SwipeSide.RIGHT)
+                        }
+                        cumulativeSidewaysDrag = 0f
+                    },
+                    onDragCancel = { cumulativeSidewaysDrag = 0f },
+                    onHorizontalDrag = { _, dragAmount -> cumulativeSidewaysDrag += dragAmount }
                 )
             }
             // Long-pressing empty space opens Settings; app rows handle their own long-press.

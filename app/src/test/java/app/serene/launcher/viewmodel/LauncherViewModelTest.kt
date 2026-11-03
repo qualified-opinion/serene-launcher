@@ -12,6 +12,7 @@ import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.ProfileState
 import app.serene.launcher.model.StatusMessage
+import app.serene.launcher.model.SwipeSide
 import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.testing.FakeAppsRepository
 import app.serene.launcher.testing.FakeSystemActions
@@ -630,5 +631,49 @@ class LauncherViewModelTest {
         viewModel.onHomeDoubleTap()
         runCurrent()
         assertEquals(StatusMessage(R.string.status_lock_not_supported), viewModel.uiState.value.statusMessage)
+    }
+
+    @Test
+    fun `swiping sideways opens the app chosen for that side and nothing otherwise`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+
+        viewModel.onHomeSwipe(SwipeSide.LEFT)
+        runCurrent()
+        assertTrue(appsRepository.launched.isEmpty())
+        assertNull(viewModel.uiState.value.statusMessage)
+
+        viewModel.setSwipeApp(SwipeSide.LEFT, maps)
+        advanceUntilIdle()
+        assertEquals(maps.id, viewModel.uiState.value.swipeLeft?.app?.id)
+
+        viewModel.onHomeSwipe(SwipeSide.RIGHT)
+        viewModel.onHomeSwipe(SwipeSide.LEFT)
+        runCurrent()
+        assertEquals(listOf(maps.id), appsRepository.launched.map { it.id })
+    }
+
+    @Test
+    fun `a hidden app can still be opened with a swipe`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        viewModel.setSwipeApp(SwipeSide.RIGHT, camera)
+        viewModel.hideApp(camera)
+        advanceUntilIdle()
+
+        viewModel.onHomeSwipe(SwipeSide.RIGHT)
+        runCurrent()
+
+        assertEquals(listOf(camera.id), appsRepository.launched.map { it.id })
+    }
+
+    @Test
+    fun `a swipe to an app that is gone says so`() = runTest(dispatcher) {
+        preferences.setSwipeApp(SwipeSide.LEFT, "pkg.gone/Main")
+        val viewModel = loadedViewModel()
+
+        viewModel.onHomeSwipe(SwipeSide.LEFT)
+        runCurrent()
+
+        assertTrue(appsRepository.launched.isEmpty())
+        assertEquals(StatusMessage(R.string.status_swipe_app_missing), viewModel.uiState.value.statusMessage)
     }
 }
