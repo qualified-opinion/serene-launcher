@@ -73,7 +73,11 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.DARK -> true
             }
 
-            SereneLauncherTheme(darkTheme = darkTheme) {
+            SereneLauncherTheme(
+                darkTheme = darkTheme,
+                useWallpaperColours = uiState.useWallpaperColours,
+                showWallpaper = uiState.showWallpaper
+            ) {
                 CompositionLocalProvider(LocalAppIconLoader provides AppIconLoader.get(this)) {
                     SereneLauncherRoot(
                         viewModel = viewModel
@@ -177,7 +181,12 @@ fun SereneLauncherRoot(
                         swipeLeft = uiState.swipeLeft,
                         swipeRight = uiState.swipeRight,
                         pickableApps = uiState.allApps,
-                        onSwipeAppChange = viewModel::setSwipeApp
+                        onSwipeAppChange = viewModel::setSwipeApp,
+                        showWallpaper = uiState.showWallpaper,
+                        onShowWallpaperChange = viewModel::setShowWallpaper,
+                        useWallpaperColours = uiState.useWallpaperColours,
+                        onUseWallpaperColoursChange = viewModel::setUseWallpaperColours,
+                        supportsWallpaperColours = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                     )
                     LauncherScreen.DRAWER -> AppDrawerScreen(
                         apps = uiState.filteredDrawerApps,

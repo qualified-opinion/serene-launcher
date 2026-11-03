@@ -159,6 +159,8 @@ class LauncherViewModel(
             openKeyboardOnDrawer = prefs.openKeyboardOnDrawer,
             swipeDownForNotifications = prefs.swipeDownForNotifications,
             doubleTapToLock = prefs.doubleTapToLock,
+            showWallpaper = prefs.showWallpaper,
+            useWallpaperColours = prefs.useWallpaperColours,
             // Hidden apps can still be opened with a swipe, so look in every app.
             swipeLeft = prefs.swipeLeftAppId?.let { id -> SwipeTarget(id, allAppsWithPin.find { it.id == id }) },
             swipeRight = prefs.swipeRightAppId?.let { id -> SwipeTarget(id, allAppsWithPin.find { it.id == id }) },
@@ -413,6 +415,14 @@ class LauncherViewModel(
         if (!systemActions.openNotifications()) {
             showTransientMessage(StatusMessage(R.string.status_cant_open_notifications))
         }
+    }
+
+    fun setShowWallpaper(show: Boolean) {
+        viewModelScope.launch { savePreferences { preferencesRepository.setShowWallpaper(show) } }
+    }
+
+    fun setUseWallpaperColours(use: Boolean) {
+        viewModelScope.launch { savePreferences { preferencesRepository.setUseWallpaperColours(use) } }
     }
 
     /** Chooses the app a swipe to [side] opens; null means the swipe does nothing. */

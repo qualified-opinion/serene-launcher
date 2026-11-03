@@ -676,4 +676,19 @@ class LauncherViewModelTest {
         assertTrue(appsRepository.launched.isEmpty())
         assertEquals(StatusMessage(R.string.status_swipe_app_missing), viewModel.uiState.value.statusMessage)
     }
+
+    @Test
+    fun `wallpaper options start off and are saved when changed`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        assertFalse(viewModel.uiState.value.showWallpaper)
+        assertFalse(viewModel.uiState.value.useWallpaperColours)
+
+        viewModel.setShowWallpaper(true)
+        viewModel.setUseWallpaperColours(true)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.showWallpaper)
+        assertTrue(viewModel.uiState.value.useWallpaperColours)
+        assertTrue(preferences.preferencesFlow.first().showWallpaper)
+    }
 }

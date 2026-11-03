@@ -81,6 +81,10 @@
     <string name="theme_dark">Dark</string>
     <string name="settings_show_icons">Show app icons</string>
     <string name="settings_show_icons_summary">Small monochrome icons next to app names</string>
+    <string name="settings_show_wallpaper">Show wallpaper</string>
+    <string name="settings_show_wallpaper_summary">Your wallpaper shows softly behind Home and the app list</string>
+    <string name="settings_wallpaper_colours">Use wallpaper colours</string>
+    <string name="settings_wallpaper_colours_summary">Accent and background colours follow your wallpaper</string>
     <string name="settings_section_drawer">APP DRAWER</string>
     <string name="settings_auto_open">Open an app when only one matches</string>
     <string name="settings_auto_open_summary">Typing the start of a name opens the app as soon as no other app matches</string>
