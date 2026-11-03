@@ -43,9 +43,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -92,7 +93,8 @@ fun AppDrawerScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            // Over the wallpaper, the scrim behind every screen is enough; a second one would hide it.
+            .background(MaterialTheme.colorScheme.background.takeIf { it.alpha == 1f } ?: Color.Transparent)
             .testTag("app_drawer_screen"),
         contentAlignment = Alignment.TopCenter
     ) {

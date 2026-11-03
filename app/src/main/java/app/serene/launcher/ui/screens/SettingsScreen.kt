@@ -41,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -79,6 +80,12 @@ fun SettingsScreen(
     /** The apps a swipe can open, for the picker. */
     pickableApps: List<AppItem> = emptyList(),
     onSwipeAppChange: (SwipeSide, AppItem?) -> Unit = { _, _ -> },
+    showWallpaper: Boolean = false,
+    onShowWallpaperChange: (Boolean) -> Unit = {},
+    useWallpaperColours: Boolean = false,
+    onUseWallpaperColoursChange: (Boolean) -> Unit = {},
+    /** Wallpaper colours need Android 12; the switch is hidden on older phones. */
+    supportsWallpaperColours: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onClose)
@@ -88,7 +95,8 @@ fun SettingsScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            // Over the wallpaper, the scrim behind every screen is enough; a second one would hide it.
+            .background(MaterialTheme.colorScheme.background.takeIf { it.alpha == 1f } ?: Color.Transparent)
             .testTag("settings_screen"),
         contentAlignment = Alignment.TopCenter
     ) {
@@ -139,6 +147,22 @@ fun SettingsScreen(
                 onCheckedChange = onShowAppIconsChange,
                 testTag = "settings_show_icons"
             )
+            SwitchRow(
+                titleRes = R.string.settings_show_wallpaper,
+                summaryRes = R.string.settings_show_wallpaper_summary,
+                checked = showWallpaper,
+                onCheckedChange = onShowWallpaperChange,
+                testTag = "settings_show_wallpaper"
+            )
+            if (supportsWallpaperColours) {
+                SwitchRow(
+                    titleRes = R.string.settings_wallpaper_colours,
+                    summaryRes = R.string.settings_wallpaper_colours_summary,
+                    checked = useWallpaperColours,
+                    onCheckedChange = onUseWallpaperColoursChange,
+                    testTag = "settings_wallpaper_colours"
+                )
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

@@ -66,7 +66,11 @@ data class LauncherUserPreferences(
     val doubleTapToLock: Boolean = false,
     /** Ids of the apps a swipe left or right on Home opens. Null: that swipe does nothing. */
     val swipeLeftAppId: String? = null,
-    val swipeRightAppId: String? = null
+    val swipeRightAppId: String? = null,
+    /** The phone's wallpaper shows behind Home and the app list. Off by default. */
+    val showWallpaper: Boolean = false,
+    /** Material You colours taken from the wallpaper (Android 12+). Off by default. */
+    val useWallpaperColours: Boolean = false
 )
 
 class LauncherPreferencesRepository(
@@ -87,6 +91,8 @@ class LauncherPreferencesRepository(
         val KEY_HIDDEN_APP_IDS = stringSetPreferencesKey("hidden_app_ids")
         val KEY_SWIPE_DOWN_NOTIFICATIONS = booleanPreferencesKey("swipe_down_notifications")
         val KEY_DOUBLE_TAP_LOCK = booleanPreferencesKey("double_tap_lock")
+        val KEY_SHOW_WALLPAPER = booleanPreferencesKey("show_wallpaper")
+        val KEY_WALLPAPER_COLOURS = booleanPreferencesKey("wallpaper_colours")
         val KEY_SWIPE_LEFT_APP = stringPreferencesKey("swipe_left_app")
         val KEY_SWIPE_RIGHT_APP = stringPreferencesKey("swipe_right_app")
         private val SWIPE_APP_KEYS = listOf(KEY_SWIPE_LEFT_APP, KEY_SWIPE_RIGHT_APP)
@@ -141,7 +147,9 @@ class LauncherPreferencesRepository(
                 swipeDownForNotifications = prefs[KEY_SWIPE_DOWN_NOTIFICATIONS] ?: true,
                 doubleTapToLock = prefs[KEY_DOUBLE_TAP_LOCK] ?: false,
                 swipeLeftAppId = prefs[KEY_SWIPE_LEFT_APP],
-                swipeRightAppId = prefs[KEY_SWIPE_RIGHT_APP]
+                swipeRightAppId = prefs[KEY_SWIPE_RIGHT_APP],
+                showWallpaper = prefs[KEY_SHOW_WALLPAPER] ?: false,
+                useWallpaperColours = prefs[KEY_WALLPAPER_COLOURS] ?: false
             )
         }
 
@@ -316,6 +324,14 @@ class LauncherPreferencesRepository(
 
     suspend fun setDoubleTapToLock(enabled: Boolean) {
         dataStore.edit { prefs -> prefs[KEY_DOUBLE_TAP_LOCK] = enabled }
+    }
+
+    suspend fun setShowWallpaper(show: Boolean) {
+        dataStore.edit { prefs -> prefs[KEY_SHOW_WALLPAPER] = show }
+    }
+
+    suspend fun setUseWallpaperColours(use: Boolean) {
+        dataStore.edit { prefs -> prefs[KEY_WALLPAPER_COLOURS] = use }
     }
 
     /** Saves the app a swipe to [side] opens, or clears it when [appId] is null. */
