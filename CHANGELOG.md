@@ -7,6 +7,7 @@ When you release, rename **Unreleased** to the version and date, for example `##
 ## [Unreleased]
 
 ### Added
+- Swipe left or right on Home to open an app you choose in Settings → Gestures (nothing by default).
 - Swipe down on Home to open notifications (on by default; turn it off in Settings).
 - Double-tap empty space on Home to lock the screen (Android 9+, off by default). It uses an optional accessibility service that Serene explains before you turn it on; the service only presses the lock button and can't read your screen.
 - Press and hold an app to see its own shortcuts, such as "New message", and tap one to open it. This needs Serene to be your default home app and Android 7.1 or later.

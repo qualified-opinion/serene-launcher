@@ -23,6 +23,8 @@ import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.LauncherUiState
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.StatusMessage
+import app.serene.launcher.model.SwipeSide
+import app.serene.launcher.model.SwipeTarget
 import app.serene.launcher.model.ThemeMode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -157,6 +159,9 @@ class LauncherViewModel(
             openKeyboardOnDrawer = prefs.openKeyboardOnDrawer,
             swipeDownForNotifications = prefs.swipeDownForNotifications,
             doubleTapToLock = prefs.doubleTapToLock,
+            // Hidden apps can still be opened with a swipe, so look in every app.
+            swipeLeft = prefs.swipeLeftAppId?.let { id -> SwipeTarget(id, allAppsWithPin.find { it.id == id }) },
+            swipeRight = prefs.swipeRightAppId?.let { id -> SwipeTarget(id, allAppsWithPin.find { it.id == id }) },
             selectedAppForMenu = selectedApp,
             statusMessage = statusMessage
         )
@@ -407,6 +412,25 @@ class LauncherViewModel(
         if (!_uiState.value.swipeDownForNotifications) return
         if (!systemActions.openNotifications()) {
             showTransientMessage(StatusMessage(R.string.status_cant_open_notifications))
+        }
+    }
+
+    /** Chooses the app a swipe to [side] opens; null means the swipe does nothing. */
+    fun setSwipeApp(side: SwipeSide, app: AppItem?) {
+        viewModelScope.launch { savePreferences { preferencesRepository.setSwipeApp(side, app?.id) } }
+    }
+
+    /** A swipe left or right on Home opens the app chosen for it in Settings, if any. */
+    fun onHomeSwipe(side: SwipeSide) {
+        val target = when (side) {
+            SwipeSide.LEFT -> _uiState.value.swipeLeft
+            SwipeSide.RIGHT -> _uiState.value.swipeRight
+        } ?: return
+        val app = target.app
+        if (app == null) {
+            showTransientMessage(StatusMessage(R.string.status_swipe_app_missing))
+        } else {
+            launchApp(app)
         }
     }
 

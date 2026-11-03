@@ -15,6 +15,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.SwipeSide
 import app.serene.launcher.model.ThemeMode
 import java.io.File
 import java.io.IOException
@@ -62,7 +63,10 @@ data class LauncherUserPreferences(
     /** Swiping down on Home opens the notifications. On unless the user turns it off. */
     val swipeDownForNotifications: Boolean = true,
     /** Double-tapping empty space on Home locks the screen. Off until the user turns it on. */
-    val doubleTapToLock: Boolean = false
+    val doubleTapToLock: Boolean = false,
+    /** Ids of the apps a swipe left or right on Home opens. Null: that swipe does nothing. */
+    val swipeLeftAppId: String? = null,
+    val swipeRightAppId: String? = null
 )
 
 class LauncherPreferencesRepository(
@@ -83,6 +87,14 @@ class LauncherPreferencesRepository(
         val KEY_HIDDEN_APP_IDS = stringSetPreferencesKey("hidden_app_ids")
         val KEY_SWIPE_DOWN_NOTIFICATIONS = booleanPreferencesKey("swipe_down_notifications")
         val KEY_DOUBLE_TAP_LOCK = booleanPreferencesKey("double_tap_lock")
+        val KEY_SWIPE_LEFT_APP = stringPreferencesKey("swipe_left_app")
+        val KEY_SWIPE_RIGHT_APP = stringPreferencesKey("swipe_right_app")
+        private val SWIPE_APP_KEYS = listOf(KEY_SWIPE_LEFT_APP, KEY_SWIPE_RIGHT_APP)
+
+        internal fun swipeKey(side: SwipeSide) = when (side) {
+            SwipeSide.LEFT -> KEY_SWIPE_LEFT_APP
+            SwipeSide.RIGHT -> KEY_SWIPE_RIGHT_APP
+        }
         /** One "id<TAB>name" entry per line. Ids can't hold tabs or newlines, and names are stripped of them. */
         val KEY_CUSTOM_APP_LABELS = stringPreferencesKey("custom_app_labels")
 
@@ -127,7 +139,9 @@ class LauncherPreferencesRepository(
                 hiddenAppIds = prefs[KEY_HIDDEN_APP_IDS] ?: emptySet(),
                 customLabels = decodeLabels(prefs[KEY_CUSTOM_APP_LABELS]),
                 swipeDownForNotifications = prefs[KEY_SWIPE_DOWN_NOTIFICATIONS] ?: true,
-                doubleTapToLock = prefs[KEY_DOUBLE_TAP_LOCK] ?: false
+                doubleTapToLock = prefs[KEY_DOUBLE_TAP_LOCK] ?: false,
+                swipeLeftAppId = prefs[KEY_SWIPE_LEFT_APP],
+                swipeRightAppId = prefs[KEY_SWIPE_RIGHT_APP]
             )
         }
 
@@ -206,6 +220,8 @@ class LauncherPreferencesRepository(
                 if (keptLabels.isEmpty()) prefs.remove(KEY_CUSTOM_APP_LABELS)
                 else prefs[KEY_CUSTOM_APP_LABELS] = encodeLabels(keptLabels)
             }
+            // ...and stops being what a swipe on Home opens.
+            SWIPE_APP_KEYS.forEach { key -> if (prefs[key]?.let(::isRemoved) == true) prefs.remove(key) }
 
             val order = pinOrder(prefs, apps)
             val kept = order.filterNot(::isRemoved)
@@ -220,7 +236,7 @@ class LauncherPreferencesRepository(
     }
 
     /**
-     * Swaps saved app ids for new ones in pins, hidden apps and custom names. [replacements] gets
+     * Swaps saved app ids for new ones in pins, hidden apps, custom names and swipe apps. [replacements] gets
      * every saved id and returns old id to new id. Pins keep their place on Home. If the new id was
      * already saved, it is kept once, and a name already given to it wins over the old one.
      * No key is renamed or dropped: only the ids inside them change.
@@ -230,9 +246,15 @@ class LauncherPreferencesRepository(
             val pinIds = prefs[KEY_PINNED_APP_IDS].orEmpty()
             val hidden = prefs[KEY_HIDDEN_APP_IDS].orEmpty()
             val labels = decodeLabels(prefs[KEY_CUSTOM_APP_LABELS])
-            val map = replacements(pinIds + hidden + labels.keys)
+            val swipeIds = SWIPE_APP_KEYS.mapNotNull { prefs[it] }
+            val map = replacements(pinIds + hidden + labels.keys + swipeIds)
             if (map.isEmpty()) return@edit
             fun swap(id: String) = map[id] ?: id
+
+            SWIPE_APP_KEYS.forEach { key ->
+                val id = prefs[key]
+                if (id != null && id in map) prefs[key] = swap(id)
+            }
 
             if (pinIds.any { it in map }) {
                 if (prefs[KEY_PINNED_APP_ORDER] == null) {
@@ -294,6 +316,13 @@ class LauncherPreferencesRepository(
 
     suspend fun setDoubleTapToLock(enabled: Boolean) {
         dataStore.edit { prefs -> prefs[KEY_DOUBLE_TAP_LOCK] = enabled }
+    }
+
+    /** Saves the app a swipe to [side] opens, or clears it when [appId] is null. */
+    suspend fun setSwipeApp(side: SwipeSide, appId: String?) {
+        dataStore.edit { prefs ->
+            if (appId == null) prefs.remove(swipeKey(side)) else prefs[swipeKey(side)] = appId
+        }
     }
 
     suspend fun setOpenKeyboardOnDrawer(open: Boolean) {

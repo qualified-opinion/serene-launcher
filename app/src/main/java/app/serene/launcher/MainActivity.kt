@@ -173,7 +173,11 @@ fun SereneLauncherRoot(
                         isLockSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P,
                         onOpenAccessibilitySettings = {
                             context.openSystemScreen(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) {}
-                        }
+                        },
+                        swipeLeft = uiState.swipeLeft,
+                        swipeRight = uiState.swipeRight,
+                        pickableApps = uiState.allApps,
+                        onSwipeAppChange = viewModel::setSwipeApp
                     )
                     LauncherScreen.DRAWER -> AppDrawerScreen(
                         apps = uiState.filteredDrawerApps,
@@ -203,6 +207,7 @@ fun SereneLauncherRoot(
                         onOpenDrawer = viewModel::openDrawer,
                         onOpenSettings = viewModel::openSettings,
                         onSwipeDown = viewModel::onHomeSwipeDown,
+                        onSwipeSideways = viewModel::onHomeSwipe,
                         onDoubleTap = if (uiState.doubleTapToLock) viewModel::onHomeDoubleTap else null,
                         onClockClick = {
                             context.openSystemScreen(Intent(AlarmClock.ACTION_SHOW_ALARMS)) {

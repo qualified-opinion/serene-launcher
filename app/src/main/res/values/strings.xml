@@ -91,6 +91,11 @@
     <string name="settings_double_tap_lock_summary">Double-tap empty space on Home</string>
     <string name="settings_double_tap_lock_needs_service">Turn on Serene in Accessibility settings to use this</string>
     <string name="settings_double_tap_lock_old_android">Needs Android 9 or later</string>
+    <string name="settings_swipe_left">Swipe left opens</string>
+    <string name="settings_swipe_right">Swipe right opens</string>
+    <string name="settings_swipe_nothing">Nothing</string>
+    <string name="settings_swipe_app_missing">An app that isn\'t installed</string>
+    <string name="status_swipe_app_missing">The app for this swipe isn\'t installed. Choose another in Settings.</string>
     <string name="lock_service_title">Let Serene lock the screen?</string>
     <string name="lock_service_message">Android only lets an app lock the screen through an accessibility service. Serene\'s service does one thing: it presses the lock button (or opens notifications) when you use the gesture. It can\'t read your screen or what you type, and it has no internet access. On the next screen, tap Serene Launcher and turn it on. You can turn it off there at any time.</string>
     <string name="lock_service_open_settings">Open Accessibility settings</string>
