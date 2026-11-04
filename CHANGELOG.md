@@ -6,6 +6,8 @@ When you release, rename **Unreleased** to the version and date, for example `##
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-04
+
 ### Added
 - Export your pins, names, hidden apps and options to a file, and import them again, for example on a new phone (Settings → Backup). No network involved.
 - Show your wallpaper behind Home and the app list, with a soft layer that keeps text readable (Settings → Appearance, off by default).
