@@ -1,6 +1,6 @@
 # Serene Launcher roadmap
 
-Updated 2026-11-03 against `main` `9a62669`. This file replaces [issue #27](https://github.com/qualified-opinion/serene-launcher/issues/27) as the source of truth. Issue #27 stays open as a pointer.
+Updated 2026-11-03 against `main` `9af4cbe`. This file replaces [issue #27](https://github.com/qualified-opinion/serene-launcher/issues/27) as the source of truth. Issue #27 stays open as a pointer.
 
 ## What this is
 A minimalist, fully offline Android home screen. It has pinned apps on Home and a searchable A–Z drawer, including work apps. It's distributed as sideloaded APKs on GitHub Releases only.
@@ -22,7 +22,7 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | B9 UI tests | `claude/clever-dirac-h3cvw6` | #26 (the macrobenchmark part is left for a later PR) | Merged #43, `fb176f6` | - |
 | B10 Shortcuts and gestures | `claude/clever-dirac-h3cvw6` | #22, then #20 in two parts: swipe down and double-tap to lock, then swipe left/right to open an app | Merged #44 `3fa5f69`, #45 `c833d99`, #46 `bab08c6` | - |
 | B11 Wallpaper | `claude/clever-dirac-h3cvw6` | #21 | Merged #47, `9a62669` | - |
-| B12 Backup file | `claude/clever-dirac-h3cvw6` | #23, export and import of a settings file (backup rules were settled in B3) | In review | - |
+| B12 Backup file | `claude/clever-dirac-h3cvw6` | #23, export and import of a settings file (backup rules were settled in B3) | Merged #48, `9af4cbe` | - |
 
 ## Item index
 Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review 1](reviews/kiln-review-1.md).
@@ -42,7 +42,7 @@ Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review
 | N-07 | Low | The keyboard Search key with an empty search box opens the first app | B1 |
 | N-09 | Low | After a read error, settings stay at defaults until restart | B1 (with N-01) |
 | N-10 | Low | Typing never auto-opens an app installed in both profiles | B8 (opens the personal copy) |
-| N-11 | Low | Many installs in a row each trigger a full reload | Later |
+| N-11 | Low | Many installs in a row each trigger a full reload | Parked (Jan, 2026-11-03) |
 | N-12 | Low | The release build isn't shrunk and ships the full extended icon library | B5 |
 | N-13 | Low | A unit test writes the real settings file and never cleans up | B1 |
 | N-15 | Low | A pin disappears from Home when an app renames its activity, but stays stored | B2 (skip, don't delete) |
@@ -54,7 +54,7 @@ Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review
 3. **Order: hardening first, then pins.** Resolved: Jan confirmed hardening first, 2026-10-22.
 
 ## After the first public release
-Jan asked on 2026-10-26 for all of #19 to #26 to be built, so nothing is cut. B4 to B7 make version 1. B8 to B12 follow it, in that order: work-profile fixes, emulator UI tests (so the bigger features are covered), shortcuts and gestures, wallpaper and Material You, and the backup file last so it covers every setting. N-11 stays open with no batch yet.
+Jan asked on 2026-10-26 for all of #19 to #26 to be built, so nothing is cut. B4 to B7 make version 1. B8 to B12 follow it, in that order: work-profile fixes, emulator UI tests (so the bigger features are covered), shortcuts and gestures, wallpaper and Material You, and the backup file last so it covers every setting. All of B8 to B12 are merged (#42 to #48). N-11 is parked (Jan, 2026-11-03). The speed check left over from #26 is tracked in #49, also with no batch yet.
 
 ## How work is run
 1. Kiln writes the handoff pack, and Jan says go.
@@ -66,6 +66,7 @@ Jan asked on 2026-10-26 for all of #19 to #26 to be built, so nothing is cut. B4
 
 ## Open verification (phone checks not yet done)
 - Nothing from PRs #1–#29 has been run on a physical device by a reviewer. All were checked by CI only.
+- PRs #42 to #48 (B8 to B12) passed CI, including the emulator UI tests from #43. Each lists phone test steps; whether they were run on a phone isn't recorded here. Real locking, the notification shade, app shortcuts, wallpaper colours and the file picker can only be checked on a phone.
 
 ## First message for an agent starting alone
 "Read AGENTS.md and docs/plan/ROADMAP.md in qualified-opinion/serene-launcher. Take the first batch whose status isn't Merged, follow its pack in docs/plan/handoffs/, open one PR that updates the status table, and don't merge."
