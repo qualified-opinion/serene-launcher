@@ -34,6 +34,13 @@ interface AppsRepository {
     /** Starts the app. Fails if it is no longer installed, is disabled, or its profile is paused. */
     fun launchApp(app: AppItem): Result<Unit>
 
+    /**
+     * Asks Android to turn the app's paused profile (usually work apps) back on. Android may show
+     * its own confirmation or unlock screen. False when the request couldn't be made: Android 8 or
+     * older, or Serene isn't the default home app.
+     */
+    fun requestProfileResume(app: AppItem): Boolean = false
+
     fun openAppInfo(app: AppItem): Result<Unit>
 
     /**

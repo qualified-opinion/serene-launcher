@@ -50,6 +50,7 @@
     <string name="status_auto_opened">Auto-opened %1$s</string>
     <string name="status_cant_open">Can\'t open %1$s</string>
     <string name="status_cant_open_paused">Can\'t open %1$s. Turn on work apps first.</string>
+    <string name="status_resuming_profile">Turning on work apps. Tap %1$s again once they\'re on.</string>
     <string name="status_cant_show_app_info">Can\'t show app info for %1$s</string>
     <string name="status_cant_open_alarms">Can\'t open alarms</string>
     <string name="status_cant_open_calendar">Can\'t open calendar</string>

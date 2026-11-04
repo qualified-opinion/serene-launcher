@@ -37,6 +37,7 @@ When you release, rename **Unreleased** to the version and date, for example `##
 - Default pins are set up again if the first app scan found nothing.
 - Pressing Home returns to the home screen from anywhere in the launcher.
 - Pausing work apps no longer makes work apps and their pins vanish. They stay, marked "Work, paused", and come back to normal when work apps are turned on.
+- Tapping a paused work app asks Android to turn work apps back on (Android 9+, when Serene is the default home app), instead of only saying they're off.
 - The launcher notices a work profile being added, removed, paused, resumed or unlocked, without a restart.
 - If Android won't let the launcher read a profile, its apps are no longer treated as uninstalled.
 - On Android 15 and later, clone profiles and other kinds of profile are no longer all marked "Work".
