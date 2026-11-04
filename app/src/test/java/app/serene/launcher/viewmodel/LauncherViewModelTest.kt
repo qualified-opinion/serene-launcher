@@ -482,6 +482,45 @@ class LauncherViewModelTest {
     }
 
     @Test
+    fun `tapping a paused work app asks Android to turn work apps back on`() = runTest(dispatcher) {
+        val workMail = inProfile(app("Mail"), serial = 10)
+        appsRepository.apps = listOf(calendar, camera, maps, workMail)
+        preferences.setPinState(workMail.id, true)
+        val viewModel = loadedViewModel()
+        try {
+            appsRepository.apps = listOf(calendar, camera, maps)
+            appsRepository.profileStates[10] = ProfileState.PAUSED
+            appsRepository.changes.emit(AppChange.Refresh)
+            runCurrent()
+            val pausedMail = viewModel.uiState.value.pinnedApps.single { it.id == workMail.id }
+
+            appsRepository.failLaunches = true
+            appsRepository.resumeAllowed = true
+            viewModel.launchApp(pausedMail)
+            runCurrent()
+            assertEquals(listOf(workMail.id), appsRepository.resumeRequests.map { it.id })
+            assertEquals(
+                StatusMessage(R.string.status_resuming_profile, listOf("Mail")),
+                viewModel.uiState.value.statusMessage
+            )
+        } finally { viewModel.viewModelScope.cancel() }
+    }
+
+    @Test
+    fun `an app that fails to open in a running profile doesn't ask to resume anything`() = runTest(dispatcher) {
+        appsRepository.apps = listOf(calendar, camera, maps)
+        val viewModel = loadedViewModel()
+        try {
+            appsRepository.failLaunches = true
+            appsRepository.resumeAllowed = true
+            viewModel.launchApp(maps)
+            runCurrent()
+            assertTrue(appsRepository.resumeRequests.isEmpty())
+            assertEquals(StatusMessage(R.string.status_cant_open, listOf("Maps")), viewModel.uiState.value.statusMessage)
+        } finally { viewModel.viewModelScope.cancel() }
+    }
+
+    @Test
     fun `typing opens the personal copy of an app installed in both profiles`() = runTest(dispatcher) {
         appsRepository.apps = listOf(calendar, camera, maps, inProfile(maps, serial = 10))
         val viewModel = loadedViewModel()

@@ -70,6 +70,15 @@ class FakeAppsRepository(
         return Result.success(Unit)
     }
 
+    /** Whether [requestProfileResume] succeeds, as it does for the default home app on Android 9+. */
+    var resumeAllowed = false
+    val resumeRequests = mutableListOf<AppItem>()
+
+    override fun requestProfileResume(app: AppItem): Boolean {
+        resumeRequests += app
+        return resumeAllowed
+    }
+
     override fun openAppInfo(app: AppItem): Result<Unit> =
         if (failLaunches) Result.failure(IllegalStateException("app info failed")) else Result.success(Unit)
 

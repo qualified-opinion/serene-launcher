@@ -232,7 +232,7 @@ class LauncherViewModel(
                         _isDrawerOpen.value = false
                         showTransientMessage(StatusMessage(R.string.status_auto_opened, listOf(matchedApp.label)))
                     }
-                    .onFailure { showTransientMessage(cantOpenMessage(matchedApp)) }
+                    .onFailure { onLaunchFailed(matchedApp) }
             }
         }
     }
@@ -252,7 +252,7 @@ class LauncherViewModel(
                 }
                 showTransientMessage(StatusMessage(R.string.status_opening, listOf(app.label)))
             }
-            .onFailure { showTransientMessage(cantOpenMessage(app)) }
+            .onFailure { onLaunchFailed(app) }
     }
 
     fun onAppLongPress(app: AppItem) {
@@ -337,10 +337,15 @@ class LauncherViewModel(
         }
     }
 
-    private fun cantOpenMessage(app: AppItem): StatusMessage = StatusMessage(
-        if (app.isProfilePaused) R.string.status_cant_open_paused else R.string.status_cant_open,
-        listOf(app.label)
-    )
+    /** A paused work app asks Android to turn work apps back on; anything else just says it can't open. */
+    private fun onLaunchFailed(app: AppItem) {
+        val messageRes = when {
+            !app.isProfilePaused -> R.string.status_cant_open
+            installedAppsRepository.requestProfileResume(app) -> R.string.status_resuming_profile
+            else -> R.string.status_cant_open_paused
+        }
+        showTransientMessage(StatusMessage(messageRes, listOf(app.label)))
+    }
 
     fun startRenaming(app: AppItem) {
         _selectedAppForMenu.value = null

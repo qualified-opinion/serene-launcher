@@ -189,6 +189,13 @@ class InstalledAppsRepository(
         launcherApps.startMainActivity(app.componentName(), app.userHandle(), null, null)
     }
 
+    override fun requestProfileResume(app: AppItem): Boolean {
+        // Only the default home app (or a holder of MODIFY_QUIET_MODE) may do this, from Android 9.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || app.isPersonalProfile) return false
+        // The result says whether the profile is already on; false still means Android is asking the user.
+        return runCatching { userManager.requestQuietModeEnabled(false, app.userHandle()) }.isSuccess
+    }
+
     override fun openAppInfo(app: AppItem): Result<Unit> = runCatching {
         launcherApps.startAppDetailsActivity(app.componentName(), app.userHandle(), null, null)
     }
