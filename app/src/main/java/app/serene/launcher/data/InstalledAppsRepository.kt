@@ -7,15 +7,22 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.LauncherApps
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.os.UserHandle
 import android.os.UserManager
+import android.provider.AlarmClock
+import android.provider.MediaStore
+import android.provider.Settings
+import android.provider.Telephony
+import android.telecom.TelecomManager
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import app.serene.launcher.domain.AppShortcuts
+import app.serene.launcher.domain.DefaultPins
 import app.serene.launcher.domain.ProfileApps
 import app.serene.launcher.domain.ShortcutEntry
 import app.serene.launcher.model.AppItem
@@ -165,25 +172,32 @@ class InstalledAppsRepository(
     }
 
     /**
-     * Selects a sensible initial set of up to 5 essential app IDs to pin on first run.
+     * Picks up to 5 everyday apps to pin on first run. The phone's own dialer, SMS app, camera,
+     * settings, clock and calendar are found by what they do, so this works in any language;
+     * English names are the fallback (and the only way to find a notes app).
      */
     override fun selectInitialPinnedIds(allApps: List<AppItem>): Set<String> {
-        val preferredNames = listOf("Phone", "Messages", "Camera", "Settings", "Clock", "Notes", "Calendar")
-        val personalApps = allApps.filter { it.isPersonalProfile }
-        val selected = mutableSetOf<String>()
-        for (preferred in preferredNames) {
-            val match = personalApps.firstOrNull { it.label.equals(preferred, ignoreCase = true) }
-                ?: personalApps.firstOrNull { it.label.contains(preferred, ignoreCase = true) }
-            if (match != null) {
-                selected.add(match.id)
-            }
-            if (selected.size >= 5) break
-        }
-        if (selected.isEmpty()) {
-            personalApps.take(4).forEach { selected.add(it.id) }
-        }
-        return selected
+        val roles = listOf(
+            DefaultPins.Role("Phone", runCatching { context.getSystemService(TelecomManager::class.java)?.defaultDialerPackage }.getOrNull()),
+            DefaultPins.Role("Messages", runCatching { Telephony.Sms.getDefaultSmsPackage(context) }.getOrNull()),
+            DefaultPins.Role("Camera", packageFor(Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA))),
+            DefaultPins.Role("Settings", packageFor(Intent(Settings.ACTION_SETTINGS))),
+            DefaultPins.Role("Clock", packageFor(Intent(AlarmClock.ACTION_SHOW_ALARMS))),
+            DefaultPins.Role("Notes"),
+            DefaultPins.Role("Calendar", packageFor(Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CALENDAR)))
+        )
+        return DefaultPins.choose(allApps, roles)
     }
+
+    /**
+     * The package of the app that handles [intent], or null when none does or Android would ask
+     * which app to use. Every app with a launcher icon is visible to Serene, so no extra queries are needed.
+     */
+    private fun packageFor(intent: Intent): String? = runCatching {
+        context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            ?.activityInfo?.packageName
+            ?.takeUnless { it == "android" } // the "choose an app" screen
+    }.getOrNull()
 
     override fun launchApp(app: AppItem): Result<Unit> = runCatching {
         launcherApps.startMainActivity(app.componentName(), app.userHandle(), null, null)

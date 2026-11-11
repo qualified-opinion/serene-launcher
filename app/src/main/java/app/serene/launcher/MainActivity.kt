@@ -101,6 +101,7 @@ class MainActivity : ComponentActivity() {
             viewModel.closeDrawer()
             viewModel.closeSettings()
             viewModel.dismissAppMenu()
+            viewModel.cancelRenaming()
         }
     }
 }

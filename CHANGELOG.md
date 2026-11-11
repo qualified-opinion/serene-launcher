@@ -12,6 +12,9 @@ When you release, rename **Unreleased** to the version and date, for example `##
 - A "Change wallpaper" shortcut in Settings that opens the phone's own wallpaper picker.
 
 ### Fixed
+- On a phone in a language other than English, the apps pinned to Home on first start are now the phone's own dialer, messages, camera, settings, clock and calendar, found by what they do, instead of four apps from the top of the list.
+- Pressing Home while renaming an app now closes the Rename box.
+- The confirmation pill (for example "Pinned Maps to Home") keeps its text while it fades out instead of shrinking to a dot.
 - The window behind the app now matches the launcher's own light or dark choice and colour, so no strip of a different colour shows when the keyboard opens.
 - The "Press and hold" hint on Home is no longer faded over the wallpaper, where it was hard to read.
 
