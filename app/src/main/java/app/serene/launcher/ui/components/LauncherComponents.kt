@@ -745,6 +745,11 @@ fun TransientStatusPill(
     message: String?,
     modifier: Modifier = Modifier
 ) {
+    // Keep showing the last message while the pill fades out, instead of an empty pill. A plain
+    // holder is enough: a new message recomposes this function anyway.
+    val lastMessage = remember { arrayOf("") }
+    val shownMessage = if (message.isNullOrBlank()) lastMessage[0] else message
+    lastMessage[0] = shownMessage
     AnimatedVisibility(
         visible = !message.isNullOrBlank(),
         enter = fadeIn(),
@@ -776,7 +781,7 @@ fun TransientStatusPill(
                         .background(MaterialTheme.colorScheme.primary)
                 )
                 Text(
-                    text = message ?: "",
+                    text = shownMessage,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

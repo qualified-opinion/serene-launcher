@@ -1,5 +1,6 @@
 package app.serene.launcher
 
+import android.content.Intent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -138,6 +139,28 @@ class MainFlowsTest {
         assertEquals(Lifecycle.State.RESUMED, scenario.state)
     }
 
+    @Test
+    fun pressingHomeClosesTheRenameDialog() {
+        openDrawer()
+        compose.onNodeWithTag(SEARCH_INPUT).performTextInput(QUERY)
+        waitForTag(rowTag(settingsApp))
+        compose.onNodeWithTag(rowTag(settingsApp)).performTouchInput { longClick() }
+        waitForTag(ACTION_SHEET)
+        compose.onNodeWithTag(SHEET_RENAME_BUTTON).performClick()
+        waitForTag(RENAME_FIELD)
+
+        // What the system sends when the Home button is pressed while Serene is in front.
+        context.startActivity(
+            Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_HOME)
+                .setClass(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+
+        waitForTagGone(RENAME_FIELD)
+        waitForTag(HOME)
+    }
+
     private fun openDrawer() {
         compose.onNodeWithTag(OPEN_DRAWER_BUTTON).performClick()
         waitForTag(DRAWER)
@@ -168,6 +191,8 @@ class MainFlowsTest {
         const val SEARCH_INPUT = "drawer_search_input"
         const val ACTION_SHEET = "app_action_sheet"
         const val SHEET_PIN_BUTTON = "sheet_pin_toggle_button"
+        const val SHEET_RENAME_BUTTON = "sheet_rename_button"
+        const val RENAME_FIELD = "rename_field"
 
         fun rowTag(app: AppItem) = "drawer_app_row_${app.id}"
         fun pinnedTag(app: AppItem) = "pinned_app_row_${app.id}"
