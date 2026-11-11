@@ -256,7 +256,10 @@ fun HomeScreen(
                 Text(
                     text = stringResource(R.string.long_press_hint),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                    // Faded on plain colour; full strength over the wallpaper, where faded text is hard to read.
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.let { grey ->
+                        if (MaterialTheme.colorScheme.background.alpha < 1f) grey else grey.copy(alpha = 0.65f)
+                    }
                 )
             }
         }

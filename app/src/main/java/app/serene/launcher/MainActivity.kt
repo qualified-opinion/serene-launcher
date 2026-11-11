@@ -80,7 +80,9 @@ class MainActivity : ComponentActivity() {
             SereneLauncherTheme(
                 darkTheme = darkTheme,
                 useWallpaperColours = uiState.useWallpaperColours,
-                showWallpaper = uiState.showWallpaper
+                showWallpaper = uiState.showWallpaper,
+                backgroundColour = uiState.backgroundColour,
+                wallpaperDim = uiState.wallpaperDim
             ) {
                 CompositionLocalProvider(LocalAppIconLoader provides AppIconLoader.get(this)) {
                     SereneLauncherRoot(
@@ -198,6 +200,15 @@ fun SereneLauncherRoot(
                         useWallpaperColours = uiState.useWallpaperColours,
                         onUseWallpaperColoursChange = viewModel::setUseWallpaperColours,
                         supportsWallpaperColours = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+                        backgroundColour = uiState.backgroundColour,
+                        onBackgroundColourChange = viewModel::setBackgroundColour,
+                        wallpaperDim = uiState.wallpaperDim,
+                        onWallpaperDimChange = viewModel::setWallpaperDim,
+                        onChangeWallpaper = {
+                            context.openSystemScreen(Intent(Intent.ACTION_SET_WALLPAPER)) {
+                                viewModel.onSystemScreenUnavailable(R.string.status_cant_open_wallpaper)
+                            }
+                        },
                         onExportSettings = { exportLauncher.launch("serene-launcher-settings.json") },
                         // Any file can be picked, so a wrong one gets a clear message instead of being hidden.
                         onImportSettings = { importLauncher.launch(arrayOf("*/*")) }

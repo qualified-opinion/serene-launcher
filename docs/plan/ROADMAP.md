@@ -23,6 +23,7 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | B10 Shortcuts and gestures | `claude/clever-dirac-h3cvw6` | #22, then #20 in two parts: swipe down and double-tap to lock, then swipe left/right to open an app | Merged #44 `3fa5f69`, #45 `c833d99`, #46 `bab08c6` | - |
 | B11 Wallpaper | `claude/clever-dirac-h3cvw6` | #21 | Merged #47, `9a62669` | - |
 | B12 Backup file | `claude/clever-dirac-h3cvw6` | #23, export and import of a settings file (backup rules were settled in B3) | Merged #48, `9af4cbe` | - |
+| B13 Background options | `feat/background-options` | Background colours, how much to soften the wallpaper, change-wallpaper shortcut (Jan, 2026-11-11) | PR open | - |
 
 ## Item index
 Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review 1](reviews/kiln-review-1.md).

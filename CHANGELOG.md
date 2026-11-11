@@ -6,6 +6,15 @@ When you release, rename **Unreleased** to the version and date, for example `##
 
 ## [Unreleased]
 
+### Added
+- Choose a background colour: Paper (as before), Sand, Sage, Mist, Lavender or Blush, each with a light and a dark version (Settings → Appearance).
+- With the wallpaper shown, choose how much to soften it: a little, some or a lot. "A lot" is the look from 0.1.0; the new default, "some", shows more of the wallpaper, and text gets a soft glow so it stays readable.
+- A "Change wallpaper" shortcut in Settings that opens the phone's own wallpaper picker.
+
+### Fixed
+- The window behind the app now matches the launcher's own light or dark choice and colour, so no strip of a different colour shows when the keyboard opens.
+- The "Press and hold" hint on Home is no longer faded over the wallpaper, where it was hard to read.
+
 ## [0.1.0] - 2026-11-04
 
 ### Added

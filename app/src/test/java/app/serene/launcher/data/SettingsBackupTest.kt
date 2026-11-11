@@ -1,7 +1,9 @@
 package app.serene.launcher.data
 
+import app.serene.launcher.model.BackgroundColour
 import app.serene.launcher.model.SwipeSide
 import app.serene.launcher.model.ThemeMode
+import app.serene.launcher.model.WallpaperDim
 import app.serene.launcher.testing.InMemoryPreferencesDataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -33,6 +35,8 @@ class SettingsBackupTest {
             setSwipeApp(SwipeSide.LEFT, "pkg.camera/Main")
             setShowWallpaper(true)
             setUseWallpaperColours(true)
+            setBackgroundColour(BackgroundColour.SAGE)
+            setWallpaperDim(WallpaperDim.LIGHT)
         }
 
     private fun readOk(text: String): SettingsBackup.Contents {
@@ -71,6 +75,16 @@ class SettingsBackupTest {
         assertEquals(setOf("pkg.games/Main"), prefs.hiddenAppIds)
         assertEquals(mapOf("pkg.maps/Main" to "Atlas"), prefs.customLabels)
         assertTrue(prefs.showWallpaper)
+        assertEquals(BackgroundColour.SAGE, prefs.backgroundColour)
+        assertEquals(WallpaperDim.LIGHT, prefs.wallpaperDim)
+    }
+
+    @Test
+    fun `the background colour and wallpaper dim are saved in the file`() = runTest {
+        val contents = readOk(SettingsBackup.write(configuredRepository().preferencesFlow.first()))
+
+        assertEquals(BackgroundColour.SAGE, contents.backgroundColour)
+        assertEquals(WallpaperDim.LIGHT, contents.wallpaperDim)
     }
 
     @Test
