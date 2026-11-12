@@ -6,6 +6,8 @@ When you release, rename **Unreleased** to the version and date, for example `##
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-12
+
 ### Added
 - Choose a background colour: Paper (as before), Sand, Sage, Mist, Lavender or Blush, each with a light and a dark version (Settings → Appearance).
 - With the wallpaper shown, choose how much to soften it: a little, some or a lot. "A lot" is the look from 0.1.0; the new default, "some", shows more of the wallpaper, and text gets a soft glow so it stays readable.
