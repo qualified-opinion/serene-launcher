@@ -15,8 +15,10 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.BackgroundColour
 import app.serene.launcher.model.SwipeSide
 import app.serene.launcher.model.ThemeMode
+import app.serene.launcher.model.WallpaperDim
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
@@ -70,7 +72,11 @@ data class LauncherUserPreferences(
     /** The phone's wallpaper shows behind Home and the app list. Off by default. */
     val showWallpaper: Boolean = false,
     /** Material You colours taken from the wallpaper (Android 12+). Off by default. */
-    val useWallpaperColours: Boolean = false
+    val useWallpaperColours: Boolean = false,
+    /** The colour behind everything, or behind the wallpaper. Serene's own paper by default. */
+    val backgroundColour: BackgroundColour = BackgroundColour.PAPER,
+    /** How much the background colour covers the wallpaper when it shows. */
+    val wallpaperDim: WallpaperDim = WallpaperDim.DEFAULT
 )
 
 class LauncherPreferencesRepository(
@@ -93,6 +99,8 @@ class LauncherPreferencesRepository(
         val KEY_DOUBLE_TAP_LOCK = booleanPreferencesKey("double_tap_lock")
         val KEY_SHOW_WALLPAPER = booleanPreferencesKey("show_wallpaper")
         val KEY_WALLPAPER_COLOURS = booleanPreferencesKey("wallpaper_colours")
+        val KEY_BACKGROUND_COLOUR = stringPreferencesKey("background_colour")
+        val KEY_WALLPAPER_DIM = stringPreferencesKey("wallpaper_dim")
         val KEY_SWIPE_LEFT_APP = stringPreferencesKey("swipe_left_app")
         val KEY_SWIPE_RIGHT_APP = stringPreferencesKey("swipe_right_app")
         private val SWIPE_APP_KEYS = listOf(KEY_SWIPE_LEFT_APP, KEY_SWIPE_RIGHT_APP)
@@ -149,7 +157,9 @@ class LauncherPreferencesRepository(
                 swipeLeftAppId = prefs[KEY_SWIPE_LEFT_APP],
                 swipeRightAppId = prefs[KEY_SWIPE_RIGHT_APP],
                 showWallpaper = prefs[KEY_SHOW_WALLPAPER] ?: false,
-                useWallpaperColours = prefs[KEY_WALLPAPER_COLOURS] ?: false
+                useWallpaperColours = prefs[KEY_WALLPAPER_COLOURS] ?: false,
+                backgroundColour = BackgroundColour.fromStored(prefs[KEY_BACKGROUND_COLOUR]),
+                wallpaperDim = WallpaperDim.fromStored(prefs[KEY_WALLPAPER_DIM])
             )
         }
 
@@ -348,6 +358,8 @@ class LauncherPreferencesRepository(
             backup.doubleTapToLock?.let { prefs[KEY_DOUBLE_TAP_LOCK] = it }
             backup.showWallpaper?.let { prefs[KEY_SHOW_WALLPAPER] = it }
             backup.useWallpaperColours?.let { prefs[KEY_WALLPAPER_COLOURS] = it }
+            backup.backgroundColour?.let { prefs[KEY_BACKGROUND_COLOUR] = it.name }
+            backup.wallpaperDim?.let { prefs[KEY_WALLPAPER_DIM] = it.name }
             for ((key, id) in listOf(KEY_SWIPE_LEFT_APP to backup.swipeLeftApp, KEY_SWIPE_RIGHT_APP to backup.swipeRightApp)) {
                 if (id == null) continue
                 if (id.isEmpty()) prefs.remove(key) else prefs[key] = id
@@ -361,6 +373,14 @@ class LauncherPreferencesRepository(
 
     suspend fun setUseWallpaperColours(use: Boolean) {
         dataStore.edit { prefs -> prefs[KEY_WALLPAPER_COLOURS] = use }
+    }
+
+    suspend fun setBackgroundColour(colour: BackgroundColour) {
+        dataStore.edit { prefs -> prefs[KEY_BACKGROUND_COLOUR] = colour.name }
+    }
+
+    suspend fun setWallpaperDim(dim: WallpaperDim) {
+        dataStore.edit { prefs -> prefs[KEY_WALLPAPER_DIM] = dim.name }
     }
 
     /** Saves the app a swipe to [side] opens, or clears it when [appId] is null. */

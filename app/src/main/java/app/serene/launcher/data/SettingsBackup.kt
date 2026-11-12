@@ -1,6 +1,8 @@
 package app.serene.launcher.data
 
+import app.serene.launcher.model.BackgroundColour
 import app.serene.launcher.model.ThemeMode
+import app.serene.launcher.model.WallpaperDim
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -8,6 +10,7 @@ import org.json.JSONObject
 /**
  * The settings backup file: plain JSON the user saves and opens with the phone's file picker.
  * Version 1 holds pins in order, hidden apps, custom names, the swipe apps and every option.
+ * Fields added later (such as the background colour) are simply missing from older files.
  * Reading is forgiving: an unknown or broken field is skipped and counted, never fatal.
  */
 object SettingsBackup {
@@ -33,6 +36,8 @@ object SettingsBackup {
         val swipeRightApp: String? = null,
         val showWallpaper: Boolean? = null,
         val useWallpaperColours: Boolean? = null,
+        val backgroundColour: BackgroundColour? = null,
+        val wallpaperDim: WallpaperDim? = null,
         /** How many entries were skipped because they were broken. */
         val skipped: Int = 0
     )
@@ -59,6 +64,8 @@ object SettingsBackup {
         .put("swipeRightApp", prefs.swipeRightAppId.orEmpty())
         .put("showWallpaper", prefs.showWallpaper)
         .put("useWallpaperColours", prefs.useWallpaperColours)
+        .put("backgroundColour", prefs.backgroundColour.name)
+        .put("wallpaperDim", prefs.wallpaperDim.name)
         .toString(2)
 
     fun read(text: String): ReadResult {
@@ -103,7 +110,9 @@ object SettingsBackup {
             swipeLeftApp = field("swipeLeftApp", ::swipeApp),
             swipeRightApp = field("swipeRightApp", ::swipeApp),
             showWallpaper = field("showWallpaper", ::bool),
-            useWallpaperColours = field("useWallpaperColours", ::bool)
+            useWallpaperColours = field("useWallpaperColours", ::bool),
+            backgroundColour = field("backgroundColour") { value -> BackgroundColour.entries.firstOrNull { it.name == value } },
+            wallpaperDim = field("wallpaperDim") { value -> WallpaperDim.entries.firstOrNull { it.name == value } }
         )
         return ReadResult.Ok(contents.copy(skipped = skipped))
     }

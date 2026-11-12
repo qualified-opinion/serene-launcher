@@ -68,6 +68,8 @@ data class LauncherUiState(
     val doubleTapToLock: Boolean = false,
     val showWallpaper: Boolean = false,
     val useWallpaperColours: Boolean = false,
+    val backgroundColour: BackgroundColour = BackgroundColour.PAPER,
+    val wallpaperDim: WallpaperDim = WallpaperDim.DEFAULT,
     val swipeLeft: SwipeTarget? = null,
     val swipeRight: SwipeTarget? = null,
     val selectedAppForMenu: AppItem? = null,

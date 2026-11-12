@@ -21,12 +21,14 @@ import app.serene.launcher.domain.AppSearch
 import app.serene.launcher.domain.ProfileApps
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.AppShortcut
+import app.serene.launcher.model.BackgroundColour
 import app.serene.launcher.model.LauncherUiState
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.StatusMessage
 import app.serene.launcher.model.SwipeSide
 import app.serene.launcher.model.SwipeTarget
 import app.serene.launcher.model.ThemeMode
+import app.serene.launcher.model.WallpaperDim
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -164,6 +166,8 @@ class LauncherViewModel(
             doubleTapToLock = prefs.doubleTapToLock,
             showWallpaper = prefs.showWallpaper,
             useWallpaperColours = prefs.useWallpaperColours,
+            backgroundColour = prefs.backgroundColour,
+            wallpaperDim = prefs.wallpaperDim,
             // Hidden apps can still be opened with a swipe, so look in every app.
             swipeLeft = prefs.swipeLeftAppId?.let { id -> SwipeTarget(id, allAppsWithPin.find { it.id == id }) },
             swipeRight = prefs.swipeRightAppId?.let { id -> SwipeTarget(id, allAppsWithPin.find { it.id == id }) },
@@ -488,6 +492,14 @@ class LauncherViewModel(
 
     fun setUseWallpaperColours(use: Boolean) {
         viewModelScope.launch { savePreferences { preferencesRepository.setUseWallpaperColours(use) } }
+    }
+
+    fun setBackgroundColour(colour: BackgroundColour) {
+        viewModelScope.launch { savePreferences { preferencesRepository.setBackgroundColour(colour) } }
+    }
+
+    fun setWallpaperDim(dim: WallpaperDim) {
+        viewModelScope.launch { savePreferences { preferencesRepository.setWallpaperDim(dim) } }
     }
 
     /** Chooses the app a swipe to [side] opens; null means the swipe does nothing. */

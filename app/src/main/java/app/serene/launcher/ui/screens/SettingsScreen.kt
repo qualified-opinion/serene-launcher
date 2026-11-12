@@ -3,10 +3,13 @@ package app.serene.launcher.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,11 +23,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -41,7 +46,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -51,9 +58,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.serene.launcher.R
 import app.serene.launcher.model.AppItem
+import app.serene.launcher.model.BackgroundColour
 import app.serene.launcher.model.SwipeSide
 import app.serene.launcher.model.SwipeTarget
 import app.serene.launcher.model.ThemeMode
+import app.serene.launcher.model.WallpaperDim
+import app.serene.launcher.ui.theme.backgroundSwatch
 
 @Composable
 fun SettingsScreen(
@@ -86,6 +96,11 @@ fun SettingsScreen(
     onUseWallpaperColoursChange: (Boolean) -> Unit = {},
     /** Wallpaper colours need Android 12; the switch is hidden on older phones. */
     supportsWallpaperColours: Boolean = true,
+    backgroundColour: BackgroundColour = BackgroundColour.PAPER,
+    onBackgroundColourChange: (BackgroundColour) -> Unit = {},
+    wallpaperDim: WallpaperDim = WallpaperDim.DEFAULT,
+    onWallpaperDimChange: (WallpaperDim) -> Unit = {},
+    onChangeWallpaper: () -> Unit = {},
     onExportSettings: () -> Unit = {},
     onImportSettings: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -149,6 +164,11 @@ fun SettingsScreen(
                 onCheckedChange = onShowAppIconsChange,
                 testTag = "settings_show_icons"
             )
+            BackgroundColourPicker(
+                titleRes = if (showWallpaper) R.string.settings_background_colour_with_wallpaper else R.string.settings_background_colour,
+                selected = backgroundColour,
+                onSelect = onBackgroundColourChange
+            )
             SwitchRow(
                 titleRes = R.string.settings_show_wallpaper,
                 summaryRes = R.string.settings_show_wallpaper_summary,
@@ -156,6 +176,30 @@ fun SettingsScreen(
                 onCheckedChange = onShowWallpaperChange,
                 testTag = "settings_show_wallpaper"
             )
+            if (showWallpaper) {
+                Text(
+                    text = stringResource(R.string.settings_wallpaper_dim),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)
+                )
+                Column(modifier = Modifier.selectableGroup()) {
+                    WallpaperDim.entries.forEach { dim ->
+                        RadioRow(
+                            labelRes = dim.labelRes(),
+                            selected = dim == wallpaperDim,
+                            onSelect = { onWallpaperDimChange(dim) },
+                            testTag = "settings_wallpaper_dim_${dim.name.lowercase()}"
+                        )
+                    }
+                }
+                ActionRow(
+                    R.string.settings_change_wallpaper,
+                    R.string.settings_change_wallpaper_summary,
+                    "settings_change_wallpaper",
+                    onChangeWallpaper
+                )
+            }
             if (supportsWallpaperColours) {
                 SwitchRow(
                     titleRes = R.string.settings_wallpaper_colours,
@@ -319,21 +363,109 @@ private fun ThemeOption(
     @StringRes labelRes: Int,
     selected: ThemeMode,
     onSelect: (ThemeMode) -> Unit
-) {
+) = RadioRow(labelRes, mode == selected, { onSelect(mode) }, "settings_theme_${mode.name.lowercase()}")
+
+@Composable
+private fun RadioRow(@StringRes labelRes: Int, selected: Boolean, onSelect: () -> Unit, testTag: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .selectable(selected = mode == selected, role = Role.RadioButton, onClick = { onSelect(mode) })
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onSelect)
             .padding(horizontal = 8.dp, vertical = 2.dp)
-            .testTag("settings_theme_${mode.name.lowercase()}"),
+            .testTag(testTag),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RadioButton(selected = mode == selected, onClick = null, modifier = Modifier.padding(8.dp))
+        RadioButton(selected = selected, onClick = null, modifier = Modifier.padding(8.dp))
         Text(
             text = stringResource(labelRes),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
+    }
+}
+
+@StringRes
+private fun WallpaperDim.labelRes(): Int = when (this) {
+    WallpaperDim.LIGHT -> R.string.wallpaper_dim_light
+    WallpaperDim.MEDIUM -> R.string.wallpaper_dim_medium
+    WallpaperDim.STRONG -> R.string.wallpaper_dim_strong
+}
+
+@StringRes
+private fun BackgroundColour.labelRes(): Int = when (this) {
+    BackgroundColour.PAPER -> R.string.background_paper
+    BackgroundColour.SAND -> R.string.background_sand
+    BackgroundColour.SAGE -> R.string.background_sage
+    BackgroundColour.MIST -> R.string.background_mist
+    BackgroundColour.LAVENDER -> R.string.background_lavender
+    BackgroundColour.BLUSH -> R.string.background_blush
+}
+
+/** A row of round colour swatches, one per background colour, with the chosen one ringed and ticked. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BackgroundColourPicker(
+    @StringRes titleRes: Int,
+    selected: BackgroundColour,
+    onSelect: (BackgroundColour) -> Unit
+) {
+    // The swatches show the light or dark version, whichever the launcher is using now.
+    val darkTheme = MaterialTheme.colorScheme.onBackground.luminance() > 0.5f
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Text(
+            text = stringResource(titleRes),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = stringResource(selected.labelRes()),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        FlowRow(
+            modifier = Modifier
+                .padding(top = 10.dp)
+                .selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            BackgroundColour.entries.forEach { colour ->
+                val isSelected = colour == selected
+                val name = stringResource(colour.labelRes())
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(colour) })
+                        .semantics { contentDescription = name }
+                        .testTag("settings_background_${colour.name.lowercase()}"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .border(
+                                width = if (isSelected) 3.dp else 1.dp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                shape = CircleShape
+                            )
+                            .padding(if (isSelected) 3.dp else 1.dp)
+                            .clip(CircleShape)
+                            .background(backgroundSwatch(colour, darkTheme)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Outlined.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
