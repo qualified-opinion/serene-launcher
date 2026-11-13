@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- The window background matches the Compose background so there is no flash of
-         a different colour while the launcher starts. -->
-    <style name="Theme.SereneLauncher" parent="android:Theme.Material.Light.NoActionBar">
+         a different colour while the launcher starts.
+         Serene draws its own light and dark looks, so the phone must not darken it:
+         forceDarkAllowed=false turns off "force dark" (a developer option, and on by default on
+         some phones), which otherwise turned Serene's Light theme black on a phone in dark mode. -->
+    <style name="Base.Theme.SereneLauncher" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/launcher_background</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
+
+    <style name="Theme.SereneLauncher" parent="Base.Theme.SereneLauncher" />
 </resources>

@@ -80,39 +80,6 @@ class ThemeOnDeviceTest {
         )
     }
 
-    @Test
-    fun zzDiagnostics() {
-        shell("cmd uimode night yes")
-        shell("setprop debug.hwui.force_dark true")
-        val pixel = backgroundPixel(ThemeMode.LIGHT, showWallpaper = false)
-        val info = StringBuilder()
-        info.append("uimode=").append(shell("cmd uimode night").trim())
-        info.append(" prop=").append(shell("getprop debug.hwui.force_dark").trim())
-        info.append(" pixel=").append(hex(pixel))
-        scenario?.onActivity { activity ->
-            val night = activity.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-            val a = activity.theme.obtainStyledAttributes(intArrayOf(android.R.attr.isLightTheme))
-            val b = activity.theme.obtainStyledAttributes(intArrayOf(android.R.attr.forceDarkAllowed))
-            info.append(" night=").append(night)
-            info.append(" isLight=").append(if (a.hasValue(0)) a.getBoolean(0, true).toString() else "unset")
-            info.append(" forceDarkAllowed=").append(if (b.hasValue(0)) b.getBoolean(0, true).toString() else "unset")
-            info.append(" decorFDA=").append(activity.window.decorView.isForceDarkAllowed)
-            a.recycle(); b.recycle()
-        }
-        scenario?.close()
-        val wp = backgroundPixel(ThemeMode.LIGHT, showWallpaper = true)
-        info.append(" wallpaperForceDark=").append(hex(wp))
-        scenario?.close()
-        shell("setprop debug.hwui.force_dark false")
-        val wp2 = backgroundPixel(ThemeMode.LIGHT, showWallpaper = true)
-        info.append(" wallpaperNightNoForce=").append(hex(wp2))
-        scenario?.close()
-        shell("cmd uimode night no")
-        val wp3 = backgroundPixel(ThemeMode.LIGHT, showWallpaper = true)
-        info.append(" wallpaperDay=").append(hex(wp3))
-        org.junit.Assert.fail("DIAG " + info)
-    }
-
     /** Opens Home with [themeMode] and [showWallpaper] and returns the background colour shown. */
     private fun backgroundPixel(themeMode: ThemeMode, showWallpaper: Boolean): Int {
         runBlocking {

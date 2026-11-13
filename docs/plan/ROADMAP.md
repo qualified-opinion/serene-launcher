@@ -23,8 +23,9 @@ A minimalist, fully offline Android home screen. It has pinned apps on Home and 
 | B10 Shortcuts and gestures | `claude/clever-dirac-h3cvw6` | #22, then #20 in two parts: swipe down and double-tap to lock, then swipe left/right to open an app | Merged #44 `3fa5f69`, #45 `c833d99`, #46 `bab08c6` | - |
 | B11 Wallpaper | `claude/clever-dirac-h3cvw6` | #21 | Merged #47, `9a62669` | - |
 | B12 Backup file | `claude/clever-dirac-h3cvw6` | #23, export and import of a settings file (backup rules were settled in B3) | Merged #48, `9af4cbe` | - |
-| B13 Background options | `feat/background-options` | Background colours, how much to soften the wallpaper, change-wallpaper shortcut (Jan, 2026-11-11) | PR open (#54) | - |
+| B13 Background options | `feat/background-options` | Background colours, how much to soften the wallpaper, change-wallpaper shortcut (Jan, 2026-11-11) | Merged #54, `2681681` | - |
 | B14 Small fixes | `fix/small-fixes` | First-run pins in any language, Home closes Rename, status pill fade (November review) | Merged #55, `b431170` | - |
+| B15 Light mode on a dark phone | `fix/light-mode-wallpaper` | Light theme turned black and wallpaper hidden when the phone forces dark mode on apps (Jan, 2026-11-13) | PR open (#60) | - |
 
 ## Item index
 Old ids B1–B16 come from issue #27. New ids N-01 onward come from [Kiln review 1](reviews/kiln-review-1.md).
