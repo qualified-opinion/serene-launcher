@@ -42,9 +42,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.serene.launcher.data.AppIconLoader
+import app.serene.launcher.data.DefaultLauncherStatus
 import app.serene.launcher.data.readSmallTextFrom
 import app.serene.launcher.data.writeTextTo
 import app.serene.launcher.ui.components.AppContextActionSheet
@@ -124,6 +127,17 @@ fun SereneLauncherRoot(
     LifecycleResumeEffect(Unit) {
         isLockServiceOn = viewModel.isLockServiceOn
         onPauseOrDispose { }
+    }
+    // Re-read when the user comes back from the home-app screen, so the row hides as soon as Serene is chosen.
+    var isDefaultHome by remember { mutableStateOf(DefaultLauncherStatus.isDefaultLauncher(context)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        isDefaultHome = DefaultLauncherStatus.isDefaultLauncher(context)
+    }
+    val roleRequestLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        val nowDefault = DefaultLauncherStatus.isDefaultLauncher(context)
+        isDefaultHome = nowDefault
+        // A few phones close the role dialog without granting it. Home settings is the next step.
+        if (!nowDefault) DefaultLauncherStatus.openHomeSettings(context)
     }
 
     Scaffold(
@@ -213,6 +227,18 @@ fun SereneLauncherRoot(
                         onExportSettings = { exportLauncher.launch("serene-launcher-settings.json") },
                         // Any file can be picked, so a wrong one gets a clear message instead of being hidden.
                         onImportSettings = { importLauncher.launch(arrayOf("*/*")) },
+                        isDefaultHome = isDefaultHome,
+                        onMakeDefaultHome = {
+                            DefaultLauncherStatus.request(context) { intent ->
+                                try {
+                                    roleRequestLauncher.launch(intent)
+                                } catch (_: ActivityNotFoundException) {
+                                    DefaultLauncherStatus.openHomeSettings(context)
+                                } catch (_: SecurityException) {
+                                    DefaultLauncherStatus.openHomeSettings(context)
+                                }
+                            }
+                        },
                         pendingSettingsImport = uiState.pendingSettingsImport,
                         onConfirmImport = viewModel::confirmImportSettings,
                         onCancelImport = viewModel::cancelImportSettings
