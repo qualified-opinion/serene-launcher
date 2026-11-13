@@ -6,6 +6,16 @@ When you release, rename **Unreleased** to the version and date, for example `##
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-13
+
+### Added
+- A "Make Serene my home screen" row in Settings. It shows whether Serene is your home screen and, if not, asks the phone to make it one. If you cancel, it opens the phone's home-app settings instead.
+
+### Fixed
+- Importing settings from a file now asks you to confirm before anything changes.
+- A damaged or unexpected backup file no longer crashes the app; it's refused with a message.
+- Importing a backup with no pinned apps keeps the apps already pinned to Home.
+
 ## [0.2.0] - 2026-11-12
 
 ### Added
