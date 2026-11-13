@@ -4,7 +4,6 @@ import app.serene.launcher.model.BackgroundColour
 import app.serene.launcher.model.ThemeMode
 import app.serene.launcher.model.WallpaperDim
 import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 
 /**
@@ -19,6 +18,13 @@ object SettingsBackup {
 
     /** Larger files can't be a settings backup, so they're refused before reading them whole. */
     const val MAX_BYTES = 1_000_000
+
+    /**
+     * A real backup is almost flat (the file, then a list or a name map). Anything nested deeper
+     * than this is refused before org.json walks it. org.json does that walk with recursion, and
+     * a deep file makes it throw StackOverflowError.
+     */
+    private const val MAX_NESTING = 64
 
     /** What a backup file held. A null field wasn't in the file and is left as it is on import. */
     data class Contents(
@@ -68,12 +74,16 @@ object SettingsBackup {
         .put("wallpaperDim", prefs.wallpaperDim.name)
         .toString(2)
 
-    fun read(text: String): ReadResult {
-        val json = try {
-            JSONObject(text)
-        } catch (_: JSONException) {
-            return ReadResult.NotABackup
-        }
+    fun read(text: String): ReadResult = try {
+        // StackOverflowError is an Error, so catch (Exception) would let it crash the home screen.
+        // A file this deep is not a backup either way.
+        if (nestsTooDeep(text)) ReadResult.NotABackup else readContents(text)
+    } catch (_: Throwable) {
+        ReadResult.NotABackup
+    }
+
+    private fun readContents(text: String): ReadResult {
+        val json = JSONObject(text)
         // Newer versions are read too: the fields this version knows keep their meaning.
         if (json.optString("format") != FORMAT || json.optInt("version", 0) < 1) return ReadResult.NotABackup
 
@@ -120,4 +130,33 @@ object SettingsBackup {
     /** `package/activity`, optionally `@serial`, with nothing that would break how ids are stored. */
     private fun isAppId(id: String): Boolean =
         id.length in 3..512 && '/' in id && id.none { it == '\n' || it == '\t' || it.isWhitespace() }
+
+    /**
+     * True when objects or arrays nest deeper than [MAX_NESTING]. Walks the text in a loop, so
+     * this check itself can't overflow. Braces and brackets inside strings don't count.
+     */
+    private fun nestsTooDeep(text: String): Boolean {
+        var depth = 0
+        var inString = false
+        var escaped = false
+        for (ch in text) {
+            if (inString) {
+                when {
+                    escaped -> escaped = false
+                    ch == '\\' -> escaped = true
+                    ch == '"' -> inString = false
+                }
+                continue
+            }
+            when (ch) {
+                '"' -> inString = true
+                '{', '[' -> {
+                    depth++
+                    if (depth > MAX_NESTING) return true
+                }
+                '}', ']' -> if (depth > 0) depth--
+            }
+        }
+        return false
+    }
 }

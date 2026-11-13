@@ -72,6 +72,11 @@
     <string name="settings_export_summary">Save your pins, names, hidden apps and options to a file</string>
     <string name="settings_import">Import settings</string>
     <string name="settings_import_summary">Replace them with the ones in a file you exported</string>
+    <string name="settings_import_confirm_title">Replace your settings?</string>
+    <string name="settings_import_confirm_message">This backup will replace your current pins, hidden apps, custom names and options. If it lists no pins, your Home pins stay as they are.</string>
+    <string name="settings_import_confirm_counts">%1$d pins, %2$d hidden apps, %3$d custom names.</string>
+    <string name="settings_import_replace">Replace</string>
+    <string name="settings_import_cancel">Cancel</string>
     <string name="status_settings_exported">Settings saved to the file</string>
     <string name="status_settings_export_failed">Couldn\'t save the settings file</string>
     <string name="status_settings_imported">Settings imported: %1$d pins, %2$d hidden apps, %3$d names</string>

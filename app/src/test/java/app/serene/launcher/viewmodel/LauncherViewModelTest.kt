@@ -10,6 +10,7 @@ import app.serene.launcher.data.LauncherPreferencesRepository
 import app.serene.launcher.data.LockResult
 import app.serene.launcher.data.SettingsBackup
 import app.serene.launcher.model.AppShortcut
+import app.serene.launcher.model.PendingSettingsImport
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.ProfileState
 import app.serene.launcher.model.StatusMessage
@@ -752,7 +753,15 @@ class LauncherViewModelTest {
 
         viewModel.importSettings { file }
         runCurrent()
+        // Picking the file only stages it. Nothing changes until the user taps Replace.
+        assertNull(viewModel.uiState.value.statusMessage)
+        assertEquals(PendingSettingsImport(pinCount = 1, hiddenCount = 1, nameCount = 0), viewModel.uiState.value.pendingSettingsImport)
+        assertTrue(viewModel.uiState.value.pinnedApps.isEmpty())
+
+        viewModel.confirmImportSettings()
+        runCurrent()
         assertEquals(StatusMessage(R.string.status_settings_imported, listOf(1, 1, 0)), viewModel.uiState.value.statusMessage)
+        assertNull(viewModel.uiState.value.pendingSettingsImport)
         advanceUntilIdle()
         assertEquals(listOf(maps.id), viewModel.uiState.value.pinnedApps.map { it.id })
         assertEquals(listOf(camera.id), viewModel.uiState.value.hiddenApps.map { it.id })
@@ -770,6 +779,27 @@ class LauncherViewModelTest {
         viewModel.importSettings { null }
         runCurrent()
         assertEquals(StatusMessage(R.string.status_not_a_backup), viewModel.uiState.value.statusMessage)
+        assertEquals(before, preferences.preferencesFlow.first())
+        assertNull(viewModel.uiState.value.pendingSettingsImport)
+    }
+
+    @Test
+    fun `cancelling an import leaves every setting as it was`() = runTest(dispatcher) {
+        val viewModel = loadedViewModel()
+        val before = preferences.preferencesFlow.first()
+
+        viewModel.importSettings {
+            """{"format":"serene-launcher-settings","version":1,"pins":["pkg.phone/Main"],"theme":"DARK","hidden":["pkg.camera/Main"]}"""
+        }
+        runCurrent()
+        assertEquals(PendingSettingsImport(1, 1, 0), viewModel.uiState.value.pendingSettingsImport)
+        assertEquals(before, preferences.preferencesFlow.first())
+
+        viewModel.cancelImportSettings()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.pendingSettingsImport)
+        assertNull(viewModel.uiState.value.statusMessage)
         assertEquals(before, preferences.preferencesFlow.first())
     }
 

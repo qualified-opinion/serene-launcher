@@ -23,6 +23,7 @@ import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.AppShortcut
 import app.serene.launcher.model.BackgroundColour
 import app.serene.launcher.model.LauncherUiState
+import app.serene.launcher.model.PendingSettingsImport
 import app.serene.launcher.model.ProfileKind
 import app.serene.launcher.model.StatusMessage
 import app.serene.launcher.model.SwipeSide
@@ -56,6 +57,10 @@ class LauncherViewModel(
     private val _isSettingsOpen = MutableStateFlow(false)
     private val _statusMessage = MutableStateFlow<StatusMessage?>(null)
     private val _appShortcuts = MutableStateFlow<List<AppShortcut>>(emptyList())
+    private val _pendingImport = MutableStateFlow<PendingSettingsImport?>(null)
+
+    /** The backup behind [_pendingImport], kept off the UI state until the user confirms. */
+    private var pendingBackup: SettingsBackup.Contents? = null
 
     private val _uiState = MutableStateFlow(LauncherUiState())
     val uiState: StateFlow<LauncherUiState> = _uiState.asStateFlow()
@@ -114,6 +119,8 @@ class LauncherViewModel(
                 }
             ) { state, (reordering, renaming, shortcuts) ->
                 state.copy(isReorderingPins = reordering, appBeingRenamed = renaming, appShortcuts = shortcuts)
+            }.combine(_pendingImport) { state, pending ->
+                state.copy(pendingSettingsImport = pending)
             }.collect { state ->
                 _uiState.value = state
             }
@@ -448,8 +455,8 @@ class LauncherViewModel(
     }
 
     /**
-     * Reads a settings backup with [read] (null when the file couldn't be opened or is far too big)
-     * and applies it. A file that isn't a Serene backup changes nothing.
+     * Reads a settings backup with [read] (null when the file couldn't be opened or is far too big).
+     * A file that isn't a Serene backup changes nothing. A real one waits until [confirmImportSettings].
      */
     fun importSettings(read: suspend () -> String?) {
         viewModelScope.launch {
@@ -457,7 +464,8 @@ class LauncherViewModel(
                 read()?.let(SettingsBackup::read)
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (_: Exception) {
+            } catch (_: Throwable) {
+                // StackOverflowError from a nested file is an Error. Show the same "not a backup" message.
                 null
             }
             val contents = (result as? SettingsBackup.ReadResult.Ok)?.contents
@@ -465,6 +473,20 @@ class LauncherViewModel(
                 showTransientMessage(StatusMessage(R.string.status_not_a_backup))
                 return@launch
             }
+            pendingBackup = contents
+            _pendingImport.value = PendingSettingsImport(
+                pinCount = contents.pins?.size ?: 0,
+                hiddenCount = contents.hidden?.size ?: 0,
+                nameCount = contents.names?.size ?: 0
+            )
+        }
+    }
+
+    /** Replaces settings with the backup the user just confirmed. */
+    fun confirmImportSettings() {
+        val contents = pendingBackup ?: return
+        clearPendingImport()
+        viewModelScope.launch {
             val imported = try {
                 preferencesRepository.importBackup(contents)
                 true
@@ -484,6 +506,16 @@ class LauncherViewModel(
                 }
             )
         }
+    }
+
+    /** Drops the picked backup. Settings stay as they are. */
+    fun cancelImportSettings() {
+        clearPendingImport()
+    }
+
+    private fun clearPendingImport() {
+        pendingBackup = null
+        _pendingImport.value = null
     }
 
     fun setShowWallpaper(show: Boolean) {
