@@ -6,6 +6,10 @@ When you release, rename **Unreleased** to the version and date, for example `##
 
 ## [Unreleased]
 
+### Fixed
+- Light theme on a phone set to dark mode stays light. Some phones (and Android 16's "expanded dark theme") darkened Serene on top of its own colours, so Light came out black.
+- "Show wallpaper" now tells the phone outright that Serene's window is see-through. On some phones the window stayed marked solid, so the area behind Serene was black instead of the wallpaper, and the light background over it looked dark.
+
 ## [0.3.0] - 2026-11-13
 
 ### Added

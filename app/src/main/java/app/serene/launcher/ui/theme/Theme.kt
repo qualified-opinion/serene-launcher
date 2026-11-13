@@ -1,6 +1,7 @@
 package app.serene.launcher.ui.theme
 
 import android.app.Activity
+import android.graphics.PixelFormat
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.view.WindowManager
@@ -172,6 +173,9 @@ fun SereneLauncherTheme(
         SideEffect {
             val window = (view.context as? Activity)?.window
             if (window != null) {
+                // Serene draws its own light and dark looks; the phone must not darken them again.
+                // The theme says so too (themes.xml); this also covers phones that only check views.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.decorView.isForceDarkAllowed = false
                 val insetsController = WindowCompat.getInsetsController(window, view)
                 insetsController.isAppearanceLightStatusBars = !darkTheme
                 insetsController.isAppearanceLightNavigationBars = !darkTheme
@@ -179,8 +183,12 @@ fun SereneLauncherTheme(
                 if (showWallpaper) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
                     window.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+                    // Say outright that the window is see-through. Some phones kept it marked solid
+                    // from start-up, so the screen behind Serene was black instead of the wallpaper.
+                    window.setFormat(PixelFormat.TRANSLUCENT)
                 } else {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
+                    window.setFormat(PixelFormat.OPAQUE)
                     // The window matches the chosen colour and the app's own light or dark choice, so
                     // nothing of another colour shows while the keyboard opens or a screen changes.
                     window.setBackgroundDrawable(ColorDrawable(windowBackground))

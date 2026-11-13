@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- On a phone in dark mode, Serene says it is not a light-only app. Android 16's
+         "expanded dark theme" inverts the colours of every app whose theme says it is light,
+         whatever the app draws, so without this Serene's Light theme came out black. -->
+    <style name="Theme.SereneLauncher" parent="Base.Theme.SereneLauncher">
+        <item name="android:isLightTheme" tools:targetApi="q">false</item>
+    </style>
+</resources>
