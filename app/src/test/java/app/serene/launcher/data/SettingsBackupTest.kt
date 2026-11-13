@@ -122,6 +122,48 @@ class SettingsBackupTest {
     }
 
     @Test
+    fun `an empty pins list keeps the current Home pins`() = runTest {
+        val repo = configuredRepository()
+        val before = repo.preferencesFlow.first()
+        val contents = readOk(
+            """{"format": "serene-launcher-settings", "version": 1, "pins": [], "theme": "LIGHT"}"""
+        )
+        assertEquals(emptyList<String>(), contents.pins)
+
+        repo.importBackup(contents)
+        val prefs = repo.preferencesFlow.first()
+
+        assertEquals(before.pinnedAppOrder, prefs.pinnedAppOrder)
+        assertEquals(ThemeMode.LIGHT, prefs.themeMode)
+        assertEquals(before.hiddenAppIds, prefs.hiddenAppIds)
+        assertEquals(before.customLabels, prefs.customLabels)
+    }
+
+    @Test
+    fun `deeply nested json is not a backup and does not throw`() {
+        // Far past the nesting limit, and deep enough to overflow org.json if the limit is skipped.
+        val nested = buildString {
+            append("""{"format":"serene-launcher-settings","version":1,"pins":""")
+            repeat(5_000) { append('[') }
+            append("\"pkg.maps/Main\"")
+            repeat(5_000) { append(']') }
+            append('}')
+        }
+
+        assertEquals(SettingsBackup.ReadResult.NotABackup, SettingsBackup.read(nested))
+    }
+
+    @Test
+    fun `braces inside a name are not treated as nested json`() {
+        val braces = "{".repeat(80)
+        val contents = readOk(
+            """{"format":"serene-launcher-settings","version":1,"names":{"pkg.maps/Main":"Atlas $braces"}}"""
+        )
+
+        assertEquals(mapOf("pkg.maps/Main" to "Atlas $braces"), contents.names)
+    }
+
+    @Test
     fun `a newer version is read for the fields this version knows`() {
         val contents = readOk(
             """{"format": "serene-launcher-settings", "version": 7, "pins": ["pkg.maps/Main"], "futureOption": {"a": 1}}"""

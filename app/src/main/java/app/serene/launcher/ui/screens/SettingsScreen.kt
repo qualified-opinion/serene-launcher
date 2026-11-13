@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import app.serene.launcher.R
 import app.serene.launcher.model.AppItem
 import app.serene.launcher.model.BackgroundColour
+import app.serene.launcher.model.PendingSettingsImport
 import app.serene.launcher.model.SwipeSide
 import app.serene.launcher.model.SwipeTarget
 import app.serene.launcher.model.ThemeMode
@@ -106,6 +107,10 @@ fun SettingsScreen(
     /** False until the user picks Serene as the home app. The row below is hidden once this is true. */
     isDefaultHome: Boolean = false,
     onMakeDefaultHome: () -> Unit = {},
+    /** A picked backup waiting for confirmation. Null hides the dialog. */
+    pendingSettingsImport: PendingSettingsImport? = null,
+    onConfirmImport: () -> Unit = {},
+    onCancelImport: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onClose)
@@ -332,6 +337,10 @@ fun SettingsScreen(
                 }
             }
         )
+    }
+
+    pendingSettingsImport?.let { pending ->
+        ImportConfirmDialog(pending, onConfirm = onConfirmImport, onCancel = onCancelImport)
     }
 }
 
@@ -585,6 +594,44 @@ private fun PickerRow(text: String, testTag: String, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp)
             .testTag(testTag)
+    )
+}
+
+/** Asks before a picked backup replaces pins, hidden apps, custom names and options. */
+@Composable
+private fun ImportConfirmDialog(
+    pending: PendingSettingsImport,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.settings_import_confirm_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.settings_import_confirm_message))
+                Text(
+                    stringResource(
+                        R.string.settings_import_confirm_counts,
+                        pending.pinCount,
+                        pending.hiddenCount,
+                        pending.nameCount
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                modifier = Modifier.testTag("settings_import_replace")
+            ) { Text(stringResource(R.string.settings_import_replace)) }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onCancel,
+                modifier = Modifier.testTag("settings_import_cancel")
+            ) { Text(stringResource(R.string.settings_import_cancel)) }
+        }
     )
 }
 

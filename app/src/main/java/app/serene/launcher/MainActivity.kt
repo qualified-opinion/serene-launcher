@@ -238,7 +238,10 @@ fun SereneLauncherRoot(
                                     DefaultLauncherStatus.openHomeSettings(context)
                                 }
                             }
-                        }
+                        },
+                        pendingSettingsImport = uiState.pendingSettingsImport,
+                        onConfirmImport = viewModel::confirmImportSettings,
+                        onCancelImport = viewModel::cancelImportSettings
                     )
                     LauncherScreen.DRAWER -> AppDrawerScreen(
                         apps = uiState.filteredDrawerApps,

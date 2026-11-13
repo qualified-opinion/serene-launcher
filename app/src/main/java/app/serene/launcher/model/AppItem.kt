@@ -76,7 +76,19 @@ data class LauncherUiState(
     /** The long-press menu's app's own shortcuts, empty until they have loaded. */
     val appShortcuts: List<AppShortcut> = emptyList(),
     val appBeingRenamed: AppItem? = null,
-    val statusMessage: StatusMessage? = null
+    val statusMessage: StatusMessage? = null,
+    /** A picked backup waiting for the user to confirm before it replaces anything. */
+    val pendingSettingsImport: PendingSettingsImport? = null
+)
+
+/**
+ * Counts from a settings file the user picked. Shown in the confirm dialog. A missing part of
+ * the file counts as zero, same as an empty list.
+ */
+data class PendingSettingsImport(
+    val pinCount: Int,
+    val hiddenCount: Int,
+    val nameCount: Int
 )
 
 /**
