@@ -212,7 +212,10 @@ fun SereneLauncherRoot(
                         },
                         onExportSettings = { exportLauncher.launch("serene-launcher-settings.json") },
                         // Any file can be picked, so a wrong one gets a clear message instead of being hidden.
-                        onImportSettings = { importLauncher.launch(arrayOf("*/*")) }
+                        onImportSettings = { importLauncher.launch(arrayOf("*/*")) },
+                        pendingSettingsImport = uiState.pendingSettingsImport,
+                        onConfirmImport = viewModel::confirmImportSettings,
+                        onCancelImport = viewModel::cancelImportSettings
                     )
                     LauncherScreen.DRAWER -> AppDrawerScreen(
                         apps = uiState.filteredDrawerApps,

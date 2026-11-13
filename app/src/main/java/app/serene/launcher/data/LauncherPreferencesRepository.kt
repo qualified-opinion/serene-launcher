@@ -338,12 +338,13 @@ class LauncherPreferencesRepository(
 
     /**
      * Applies a settings backup in one step. Whatever the file had replaces the current value;
-     * whatever it didn't have stays as it is. Pins for apps that aren't installed are kept, so
-     * they appear once the app is installed.
+     * whatever it didn't have stays as it is. An empty pins list is not applied, so a file that
+     * names no pins leaves Home as it is. Pins for apps that aren't installed are kept, so they
+     * appear once the app is installed.
      */
     suspend fun importBackup(backup: SettingsBackup.Contents) {
         dataStore.edit { prefs ->
-            backup.pins?.let { prefs.writePins(it) }
+            backup.pins?.takeIf { it.isNotEmpty() }?.let { prefs.writePins(it) }
             backup.hidden?.let { prefs[KEY_HIDDEN_APP_IDS] = it }
             val names = backup.names
             if (names != null) {
