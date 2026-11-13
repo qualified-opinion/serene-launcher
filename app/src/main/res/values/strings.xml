@@ -84,6 +84,9 @@
 
     <!-- Settings -->
     <string name="settings_open_cd">Open settings</string>
+    <string name="settings_section_home">HOME SCREEN</string>
+    <string name="settings_make_default_home">Make Serene my home screen</string>
+    <string name="settings_make_default_home_summary">Opens your phone\'s home app setting</string>
     <string name="settings_title">Settings</string>
     <string name="settings_back_cd">Back to Home</string>
     <string name="settings_section_appearance">APPEARANCE</string>

@@ -103,6 +103,9 @@ fun SettingsScreen(
     onChangeWallpaper: () -> Unit = {},
     onExportSettings: () -> Unit = {},
     onImportSettings: () -> Unit = {},
+    /** False until the user picks Serene as the home app. The row below is hidden once this is true. */
+    isDefaultHome: Boolean = false,
+    onMakeDefaultHome: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onClose)
@@ -143,6 +146,18 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.semantics { heading() }
                 )
+            }
+
+            if (!isDefaultHome) {
+                SectionHeader(R.string.settings_section_home)
+                ActionRow(
+                    R.string.settings_make_default_home,
+                    R.string.settings_make_default_home_summary,
+                    "settings_make_default_home",
+                    onMakeDefaultHome
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
 
             SectionHeader(R.string.settings_section_appearance)
